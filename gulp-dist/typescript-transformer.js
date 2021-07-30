@@ -1,82 +1,9 @@
-import { join, relative, dirname } from 'path';
+import { join, relative, dirname, sep as PathSep } from 'path';
 import ts from 'typescript';
-import Glob from 'glob';
-const { sync: GlobSync } = Glob;
-/** Select files regex */
-const tsPattern = /^(.+)\.(?:ts|tsx|js|jsm|jsx)$/i;
-/** Load js and ts files using pattern */
-function _getImportNodesWithPattern(factory, node, varname, pattern, cwd, currentFile) {
-    var tsFiles = [], fileName, i, len, r;
-    // find files
-    var files = GlobSync(pattern, { cwd: cwd, nodir: true });
-    var varNames = [], uniqueVar; // store unique import variable's names
-    // Current file relative path
-    currentFile = './' + relative(cwd, currentFile);
-    // filter ts and js files only
-    for (i = 0, len = files.length; i < len; ++i) {
-        fileName = files[i];
-        if (fileName !== currentFile && (r = tsPattern.exec(fileName))) {
-            uniqueVar = factory.createUniqueName(varname);
-            varNames.push(uniqueVar);
-            tsFiles.push(factory.createImportDeclaration(node.decorators, node.modifiers, 
-            // factory.createImportClause(false, uniqueVar, factory.createNamedImports([factory.createImportSpecifier(factory.createIdentifier('*'), uniqueVar)])),
-            // ,
-            factory.createImportClause(false, undefined, factory.createNamespaceImport(uniqueVar)), factory.createStringLiteral(r[1])));
-            // console.log('--- ', ts.parseIsolatedEntityName('import * as ccc from "hello"', ts.ScriptTarget.ES2020));
-        }
-    }
-    // create list
-    tsFiles.push(factory.createVariableStatement(undefined, [
-        factory.createVariableDeclaration(factory.createIdentifier(varname), undefined, undefined, factory.createArrayLiteralExpression(varNames))
-    ]));
-    // return
-    return tsFiles;
-}
-/** Replacer regex */
-const replacerRegex = /^(@[^\/\\'"`]+)/;
-/**
- * @private "import" node visitor
- */
-function _importVisitor(ctx, sf, pathMap) {
-    var it = pathMap.keys();
-    while (true) {
-        var a = it.next();
-        if (a.done)
-            break;
-    }
-    // replacer
-    function _replaceCb(txt, k) {
-        var v = pathMap.get(k); // Node < 15 do not support "??" operator
-        if (v == null)
-            v = txt;
-        else {
-            v = relative(dirname(sf.fileName), v) || '.';
-        }
-        return v;
-    }
-    // return
-    function visitorCb(node) {
-        if (ts.isImportDeclaration(node) && !node.importClause?.isTypeOnly) {
-            var importPath = node.moduleSpecifier.getText(sf);
-            importPath = importPath.substr(1, importPath.length - 2); // remove quotes
-            var newImportPath = importPath.replace(replacerRegex, _replaceCb);
-            var factory = ctx.factory;
-            var importCloseTxt;
-            if (newImportPath.includes('*') && (importCloseTxt = node.importClause?.getText(sf))) {
-                return _getImportNodesWithPattern(factory, node, importCloseTxt, newImportPath, dirname(sf.fileName), sf.fileName);
-            }
-            else if (newImportPath !== importPath) {
-                node = factory.updateImportDeclaration(node, node.decorators, node.modifiers, node.importClause, factory.createStringLiteral(newImportPath));
-            }
-        }
-        return ts.visitEachChild(node, visitorCb, ctx);
-    }
-    return visitorCb;
-}
-/**
- * Rewrite and resolve "import" statments
- */
-export default function importTransformer(compilerOptions) {
+import { statSync } from 'fs';
+const isWindows = PathSep === '\\';
+/** Resolve import @ */
+export function createImportTransformer(compilerOptions) {
     //Checks 
     if (typeof compilerOptions.baseUrl !== 'string')
         throw new Error('Expected options.baseUrl as string!');
@@ -96,8 +23,101 @@ export default function importTransformer(compilerOptions) {
         k = k.replace(/\/\*?$/, '');
         pathMap.set(k, join(baseDir, v[0].replace(/\/\*?$/, '')));
     }
-    // return transformer
+    /** Replace @ */
+    const replacerRegex = /^(@[^\/\\'"`]+)/;
+    /** Return transformer */
     return function (ctx) {
-        return function (sf) { return ts.visitNode(sf, _importVisitor(ctx, sf, pathMap)); };
+        var factory = ctx.factory;
+        return function (sf) {
+            /** File name */
+            const fileName = sf.fileName;
+            const _dirname = dirname(fileName);
+            // return
+            return _visitor(sf);
+            /** Import visitor */
+            function _visitor(node) {
+                if (ts.isImportDeclaration(node) && !node.importClause?.isTypeOnly) {
+                    //* Import declartion
+                    return factory.createImportDeclaration(node.decorators, node.modifiers, node.importClause, factory.createStringLiteral(_resolve(node.moduleSpecifier.getText())));
+                }
+                else if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
+                    //* Export declaration
+                    return factory.createExportDeclaration(node.decorators, node.modifiers, node.isTypeOnly, node.exportClause, factory.createStringLiteral(_resolve(node.moduleSpecifier.getText())));
+                }
+                else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+                    //* Dynalic import
+                    if (node.arguments.length !== 1)
+                        throw new Error(`Dynamic import must have one specifier as an argument at ${fileName}: ${node.getText()}`);
+                    var expr = node.arguments[0];
+                    if (ts.isStringLiteral(expr)) {
+                        expr = factory.createStringLiteral(_resolve(node.arguments[0].getText()));
+                    }
+                    else {
+                        expr = ts.visitEachChild(expr, function (n) {
+                            if (ts.isStringLiteral(n))
+                                n = factory.createStringLiteral(_resolve(n.getText()));
+                            return n;
+                        }, ctx);
+                    }
+                    return factory.createCallExpression(node.expression, node.typeArguments, [expr]);
+                }
+                return ts.visitEachChild(node, _visitor, ctx);
+            }
+            /** Resolve import specifier */
+            function _resolve(path) {
+                // Remove quotes, parsing using JSON.parse fails on simple quotted strings
+                //TODO find better solution to parse string
+                path = path.slice(1, path.length - 1);
+                // replace @specifier
+                let startsWithAt;
+                if ((startsWithAt = (path.charAt(0) === '@')) || path.charAt(0) === '.') {
+                    // get absolute path
+                    if (startsWithAt)
+                        path = path.replace(replacerRegex, _replaceCb);
+                    else
+                        path = join(_dirname, path);
+                    // check file exists
+                    path = _resolveFilePath(path);
+                    // create relative path to current file
+                    path = relative(_dirname, path);
+                    // Replace windows antislashes
+                    if (isWindows)
+                        path = path.replace(/\\/g, '/');
+                    // Add prefix "./"
+                    if (path.charAt(0) === '/')
+                        path = '.' + path;
+                    else if (path.charAt(0) !== '.')
+                        path = './' + path;
+                }
+                return path;
+            }
+            // Path replacer
+            function _replaceCb(txt, k) {
+                return pathMap.get(k) ?? txt;
+            }
+            // Resolve file path
+            function _resolveFilePath(path) {
+                try {
+                    if (statSync(path).isDirectory())
+                        path = join(path, 'index.js');
+                }
+                catch (e) {
+                    try {
+                        if (statSync(path + '.ts').isFile())
+                            path += '.js';
+                    }
+                    catch (e) {
+                        try {
+                            if (!path.endsWith('.js') && statSync(path + '.js').isFile())
+                                path += '.js';
+                        }
+                        catch (e) {
+                            console.error(e);
+                        }
+                    }
+                }
+                return path;
+            }
+        };
     };
 }

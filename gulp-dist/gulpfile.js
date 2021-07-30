@@ -1,21 +1,21 @@
 import Gulp from 'gulp';
-import { typescriptCompile } from './typescript.js';
-const { watch, series } = Gulp;
+import { typescriptCompile, compileTestFiles } from './typescript.js';
+const { watch, series, parallel } = Gulp;
 const argv = process.argv;
 const doWatch = !argv.includes('--nowatch');
 /** Watch modified files */
 function watchCb(cb) {
     if (doWatch) {
         watch('src/**/*.ts', typescriptCompile);
+        watch('test/**/*.ts', compileTestFiles);
         // watch('src/app/graphql/schema/**/*.gql', graphQlCompile)
     }
     cb();
 }
 export default series([
-    typescriptCompile,
-    // parallel([
-    // 	typescriptCompile,
-    // 	graphQlCompile
-    // ]),
+    parallel([
+        typescriptCompile,
+        compileTestFiles,
+    ]),
     watchCb
 ]);
