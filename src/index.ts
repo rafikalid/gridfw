@@ -5,15 +5,29 @@ import type Net from 'net';
 import {readFileSync} from 'fs';
 import { handleRequest } from './handle-request';
 import { Https_Options, Options, Protocols } from './options';
-import { IncomingMessage } from './http/incoming-message';
-import { ServerResponse } from './http/server-response';
+import { LogInterface, LogLevels, setLogLevel, voidLog} from './utils/log';
+import { ErrorCodes, GError } from './error';
+import Chalk from 'chalk';
+import {resolve} from 'path';
+import { Context } from './context';
+import ProxyAddr from 'proxy-addr';
 // import GridfwRouter from 'gridfw-tree-router';
 /**
  * Gridfw
  */
-export class Gridfw{
+export class Gridfw<TSession> implements LogInterface{
 	/** Framework version */
 	static version= JSON.parse(readFileSync('package.json', 'utf-8')).version
+	/** App name */
+	readonly name?: string
+	/** Author */
+	readonly author?: string
+	/** Author email */
+	readonly email?: string
+	/** App version */
+	readonly version?: string
+	/** If production mode */
+	readonly isProd: boolean
 	/** Underlying http2 server  */
 	readonly server: Http2.Http2SecureServer|Http.Server;
 	/** If this is a secure connection */
@@ -21,6 +35,10 @@ export class Gridfw{
 	/** Check used protocol */
 	readonly protocol:	Protocols
 
+	/** Base URL */
+	baseURL:	URL
+	/** If the base URL is generated, not given in options */
+	private _baseURLAuto: boolean
 	/** Server IP */
 	ip?:		string
 	/** Server Ip Type */
@@ -28,11 +46,33 @@ export class Gridfw{
 	/** Server port */
 	port?:		number
 
+	/** Locals, common data on all views */
+	data:	Record<string, any>= {app: this}
+
 	/** Listen options */
 	private _listenOptions: Options['listen'];
+	/** Path to views folder */
+	private _viewsPath: string;
+
+	/** Trust proxy */
+	trustProxy: (addr: string, i: number) => boolean
 
 	constructor(options?: Options){
 		options= {...options} as Options;
+		//* Info
+		this.name=		options.name;
+		this.author=	options.author;
+		this.email=		options.email;
+		this.version=	options.version;
+		this.isProd=	options.isProd ?? false;
+		//* Base URL
+		if(options.baseURL==null){
+			this.baseURL= new URL('http://localhost');
+			this._baseURLAuto= true;
+		} else {
+			this.baseURL=	options.baseURL;
+			this._baseURLAuto= false;
+		}
 		//* Listen options
 		this._listenOptions= options.listen;
 		this.protocol= options.protocol ?? Protocols.http;
@@ -42,10 +82,7 @@ export class Gridfw{
 			case Protocols.http:
 				// HTTP 1.1
 				this.secure= false;
-				this.server= Http.createServer({
-					IncomingMessage: IncomingMessage,
-					ServerResponse: ServerResponse
-				});
+				this.server= Http.createServer();
 				break;
 			case Protocols.https:
 				// HTTPs 1.1
@@ -53,11 +90,7 @@ export class Gridfw{
 				let httpsOptions= (options as Https_Options).server;
 				if(httpsOptions==null || httpsOptions.cert==null)
 					throw new Error('Expected SSL/TLS certificat for HTTP2');
-				if(httpsOptions.IncomingMessage!=null)
-					throw new Error('Enexpected server options: IncomingMessage');
-				if(httpsOptions.ServerResponse!=null)
-					throw new Error('Enexpected server options: ServerResponse');
-				this.server= Https.createServer();
+				this.server= Https.createServer(httpsOptions);
 				break;
 			case Protocols.http2:
 				// HTTP 2
@@ -80,8 +113,52 @@ export class Gridfw{
 			default:
 				throw new Error(`Enexpected protocol: ${this.protocol}, valid values are: Protocols.http, Protocols.https and Protocols.http2`);
 		}
-		// Listener
+		//* Listener
 		this.server.on('request', handleRequest.bind(this));
+		//* Log
+		this.setLogLevel(options.logLevel ?? (options.isProd? LogLevels.warn : LogLevels.debug));
+		//* I18N
+		this._defaultLocale= options.defaultLocale?.toLowerCase() ?? 'en';
+		this.reloadLoadI18n();
+		//* Views
+		this._viewsPath= options.views;
+		//* Trust proxy
+		this.trustProxy= ProxyAddr.compile(options.trustProxy)
+	}
+	
+	//* Log
+	/** Log: Debug */
+	debug:	(tag: string, message: any)=> this	=	voidLog;
+	info:	(tag: string, message: any)=> this	=	voidLog;
+	warn:	(tag: string, message: any)=> this	=	voidLog;
+	error:	(tag: string, message: any)=> this	=	voidLog;
+	fatalError:	(tag: string, message: any)=> this= voidLog;
+	private _logLevel:	LogLevels= LogLevels.debug;
+	getLogLevel(){ return this._logLevel; }
+	setLogLevel: (level: LogLevels)=> this		= setLogLevel;
+
+	//* Locales
+	private _defaultLocale: string
+	private _locales: Set<string>= new Set()
+	get defaultLocale(){ return this._defaultLocale; }
+	set defaultLocale(locale: string){
+		locale= locale.toLowerCase();
+		if(this._locales.has(locale)) this._defaultLocale= locale;
+		else throw new GError(ErrorCodes.UNKNOWN_LOCALE, `Unknown locale: ${locale}`, locale);
+	}
+
+	/**
+	 * Reload i18n list
+	 * ! Use Sync load
+	 */
+	reloadLoadI18n(){
+		//TODO
+		return this;
+	}
+
+	/** Get locale entries */
+	async getLocale(locale: string){
+		//TODO
 	}
 
 	/**
@@ -99,6 +176,11 @@ export class Gridfw{
 		this.port= a.port;
 		this.ip= a.address;
 		this.ipType= a.family;
+		//* Base url
+		if(this._baseURLAuto){
+			this.baseURL= new URL(`${this.secure?'https':'http'}://localhost:${this.port}`);
+		}
+		//* Print status
 		this.printStatus();
 		return this;
 	}
@@ -115,6 +197,42 @@ export class Gridfw{
 
 	/** Print app status */
 	printStatus(){
-		console.log('Gridfw 3.0');
+		console.log(Chalk.blueBright(`
+╒═════════════════════════════════════════════════════════════════════════════╕
+
+\t\t  ██████╗ ██████╗ ██╗██████╗ ███████╗██╗    ██╗
+\t\t ██╔════╝ ██╔══██╗██║██╔══██╗██╔════╝██║    ██║
+\t\t ██║  ███╗██████╔╝██║██║  ██║█████╗  ██║ █╗ ██║
+\t\t ██║   ██║██╔══██╗██║██║  ██║██╔══╝  ██║███╗██║
+\t\t ╚██████╔╝██║  ██║██║██████╔╝██║     ╚███╔███╔╝
+\t\t  ╚═════╝ ╚═╝  ╚═╝╚═╝╚═════╝ ╚═╝      ╚══╝╚══╝
+\t\t\tFramework version: ${Gridfw.version}
+
+\tREADY
+\t√ App name: ${this.name ?? '< Untitled >'}
+\t√ App Author: ${this.author ?? '< Unknown >'}
+\t√ Admin email: ${this.email ?? '<No email>'}
+\t${this.isProd? Chalk.green('√ Production Mode') : Chalk.keyword('orange')("[X] Development Mode.\n\t[!] Enable prodution mode to boost performance")}
+\t${Chalk.green(`█ Server listening At: ${this.baseURL.href}`)}
+╘═════════════════════════════════════════════════════════════════════════════╛`));
+		return this;
+	}
+
+	/** Render view */
+	async render(locale: string, path: string, data?: Record<string, any>){
+		var viewPath= resolve(this._viewsPath, locale, path)+'.js';
+		try {
+			var renderFx= this._viewCache.upsert(viewPath);
+			data= data==null? this.data : {...this.data, ...data};
+			return renderFx(data);
+		} catch (err) {
+			if(err?.code==='ENOENT')
+				throw new GError(ErrorCodes.VIEW_NOT_FOUND, `Missing view "${path}" for locale "${locale}" at: ${viewPath} `);
+			else
+				throw new GError(ErrorCodes.VIEW_ERROR, `Error at view "${path}"`, err);
+		}
 	}
 }
+
+
+export * from './error';
