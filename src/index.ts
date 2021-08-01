@@ -11,11 +11,13 @@ import Chalk from 'chalk';
 import {resolve} from 'path';
 import { Context } from './context';
 import ProxyAddr from 'proxy-addr';
+import { render } from './utils/render';
+import Etag from 'etag';
 // import GridfwRouter from 'gridfw-tree-router';
 /**
  * Gridfw
  */
-export class Gridfw<TSession> implements LogInterface{
+export class Gridfw<TSession, TI18n> implements LogInterface{
 	/** Framework version */
 	static version= JSON.parse(readFileSync('package.json', 'utf-8')).version
 	/** App name */
@@ -34,6 +36,8 @@ export class Gridfw<TSession> implements LogInterface{
 	readonly secure:	boolean
 	/** Check used protocol */
 	readonly protocol:	Protocols
+	/** If send pretty rendering (for HTML, JSON, ...) */
+	pretty: boolean
 
 	/** Base URL */
 	baseURL:	URL
@@ -49,13 +53,24 @@ export class Gridfw<TSession> implements LogInterface{
 	/** Locals, common data on all views */
 	data:	Record<string, any>= {app: this}
 
+	/** JSONP Callback query param */
+	jsonpParam: string;
+
 	/** Listen options */
 	private _listenOptions: Options['listen'];
 	/** Path to views folder */
-	private _viewsPath: string;
+	_viewsPath: string;
+	/** Cookie crypt key */
+	_cookieSecret: string;
 
 	/** Trust proxy */
 	trustProxy: (addr: string, i: number) => boolean
+
+	/**
+	 * Etag
+	 * Override this method to implement custom etag or disable it
+	 */
+	etag= Etag
 
 	constructor(options?: Options){
 		options= {...options} as Options;
@@ -123,7 +138,16 @@ export class Gridfw<TSession> implements LogInterface{
 		//* Views
 		this._viewsPath= options.views;
 		//* Trust proxy
-		this.trustProxy= ProxyAddr.compile(options.trustProxy)
+		if(typeof options.trustProxy==='function')
+			this.trustProxy= options.trustProxy;
+		else
+			this.trustProxy= ProxyAddr.compile(options.trustProxy);
+		//* Cookie secret
+		this._cookieSecret= options.cookieSecret ?? 'gw';
+		//* Pretty
+		this.pretty= options.pretty ?? this.isProd;
+		//* JSONP
+		this.jsonpParam= options.jsonpParam ?? 'cb';
 	}
 	
 	//* Log
@@ -138,12 +162,13 @@ export class Gridfw<TSession> implements LogInterface{
 	setLogLevel: (level: LogLevels)=> this		= setLogLevel;
 
 	//* Locales
+	/** Supported locales */
 	private _defaultLocale: string
-	private _locales: Set<string>= new Set()
+	readonly locales: Set<string>= new Set()
 	get defaultLocale(){ return this._defaultLocale; }
 	set defaultLocale(locale: string){
 		locale= locale.toLowerCase();
-		if(this._locales.has(locale)) this._defaultLocale= locale;
+		if(this.locales.has(locale)) this._defaultLocale= locale;
 		else throw new GError(ErrorCodes.UNKNOWN_LOCALE, `Unknown locale: ${locale}`, locale);
 	}
 
@@ -157,8 +182,9 @@ export class Gridfw<TSession> implements LogInterface{
 	}
 
 	/** Get locale entries */
-	async getLocale(locale: string){
+	async getLocale(locale: string): Promise<TI18n>{
 		//TODO
+		throw new Error('Unimplemented!');
 	}
 
 	/**
@@ -219,18 +245,9 @@ export class Gridfw<TSession> implements LogInterface{
 	}
 
 	/** Render view */
-	async render(locale: string, path: string, data?: Record<string, any>){
-		var viewPath= resolve(this._viewsPath, locale, path)+'.js';
-		try {
-			var renderFx= this._viewCache.upsert(viewPath);
-			data= data==null? this.data : {...this.data, ...data};
-			return renderFx(data);
-		} catch (err) {
-			if(err?.code==='ENOENT')
-				throw new GError(ErrorCodes.VIEW_NOT_FOUND, `Missing view "${path}" for locale "${locale}" at: ${viewPath} `);
-			else
-				throw new GError(ErrorCodes.VIEW_ERROR, `Error at view "${path}"`, err);
-		}
+	render(locale: string, path: string, data?: Record<string, any>){
+		data= data==null? this.data : {...this.data, ...data};
+		return render(this._viewCache, this._viewsPath, locale, path, data);
 	}
 }
 

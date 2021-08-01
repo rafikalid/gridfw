@@ -16,6 +16,13 @@ export enum Protocols{
  */
 export type Options= Http_Options | Https_Options | Http2_Options;
 export interface BOptions{
+	/** is production mode */
+	isProd?:		boolean
+	/**
+	 * Pretty rendring: useful for dev
+	 * @default true in DEV mode, false when PROD
+	 */
+	pretty?: boolean
 	/** App name */
 	name?: string
 	/** Author */
@@ -28,8 +35,6 @@ export interface BOptions{
 	/** Base URL */
 	baseURL?:	URL
 
-	/** is production mode */
-	isProd?:		boolean
 	/** Used protocol */
 	protocol?:	Protocols
 	/** Listening options */
@@ -40,10 +45,11 @@ export interface BOptions{
 	defaultLocale?: string
 	
 	/** Cookie options */
-	cookie?: {
-		/** Cookie crypt salt */
-		secret: string
-	}
+	cookieSecret?: string
+	// cookie?: {
+	// 	/** Cookie crypt salt */
+	// 	secret: string
+	// }
 	/** Views folder path */
 	views: string
 
@@ -55,6 +61,10 @@ export interface BOptions{
 	 * @example function(address, level){ return level===0; }
 	 */
 	trustProxy: string | string[] | ((addr: string, i: number) => boolean)
+
+	
+	/** JSONP Callback query param */
+	jsonpParam?: string
 }
 
 /** HTTP 1.1 options */

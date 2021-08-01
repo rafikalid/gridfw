@@ -1,10 +1,22 @@
 export enum ErrorCodes{
+	/** Internal error */
+	InternalError,
 	/** Unknown locale */
 	UNKNOWN_LOCALE,
 	/** View not found */
 	VIEW_NOT_FOUND,
 	/** View Error */
-	VIEW_ERROR
+	VIEW_ERROR,
+	/** File not found */
+	FILE_NOT_FOUND,
+	/** Send file error */
+	SEND_FILE_ERR,
+	/** File download: Expected file, Got directory! */
+	EXPECTED_FILE_GOT_DIRECTORY,
+	/** File sending aborted */
+	SEND_FILE_ABORTED,
+	/** Unknown error */
+	UNKOWN_ERROR
 }
 
 /** ERROR */
