@@ -1,6 +1,7 @@
 import type Http2 from 'http2';
 import type Https from 'https';
 import type Net from 'net';
+import Etag from 'etag';
 import { LogLevels } from './utils/log';
 
 /** Supported http protocols */
@@ -17,12 +18,12 @@ export enum Protocols{
 export type Options= Http_Options | Https_Options | Http2_Options;
 export interface BOptions{
 	/** is production mode */
-	isProd?:		boolean
+	isProd:		boolean
 	/**
 	 * Pretty rendring: useful for dev
 	 * @default true in DEV mode, false when PROD
 	 */
-	pretty?: boolean
+	pretty: boolean
 	/** App name */
 	name?: string
 	/** Author */
@@ -33,19 +34,19 @@ export interface BOptions{
 	version?: string
 
 	/** Base URL */
-	baseURL?:	URL
+	baseURL:	URL
 
 	/** Used protocol */
-	protocol?:	Protocols
+	protocol:	Protocols
 	/** Listening options */
 	listen?:	Net.ListenOptions
 	/** Log level */
-	logLevel?:	LogLevels
+	logLevel:	LogLevels
 	/** i18n: Default locale */
-	defaultLocale?: string
+	defaultLocale: string
 	
 	/** Cookie options */
-	cookieSecret?: string
+	cookieSecret: string
 	// cookie?: {
 	// 	/** Cookie crypt salt */
 	// 	secret: string
@@ -62,14 +63,16 @@ export interface BOptions{
 	 */
 	trustProxy: string | string[] | ((addr: string, i: number) => boolean)
 
+	/** Etag generator */
+	etag: boolean | ((entity: string | Buffer | Etag.StatsLike, options?: Etag.Options | undefined)=> string)
 	
 	/** JSONP Callback query param */
-	jsonpParam?: string
+	jsonpParam: string
 }
 
 /** HTTP 1.1 options */
 export interface Http_Options extends BOptions{
-	protocol?: Protocols.http
+	protocol: Protocols.http
 }
 export interface Https_Options extends BOptions{
 	protocol: Protocols.https
@@ -82,4 +85,17 @@ export interface Http2_Options extends BOptions{
 	protocol: Protocols.http2
 	/** Server options */
 	server: Http2.SecureServerOptions
+}
+
+export function initOptions(options: Partial<Options>): Options{
+	var result= {...options} as Options;
+	result.isProd??= false;
+	result.pretty??= result.isProd;
+	//* Protocol
+	options.protocol??= Protocols.http;
+	//* default locale
+	options.defaultLocale ??= 'en';
+	//* Etag
+	if(result.etag==null || result.etag===true) result.etag= Etag;
+	return result;
 }

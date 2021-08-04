@@ -4,7 +4,7 @@ import Http2 from 'http2';
 import type Net from 'net';
 import {readFileSync} from 'fs';
 import { handleRequest } from './handle-request';
-import { Https_Options, Options, Protocols } from './options';
+import { Https_Options, initOptions, Options, Protocols } from './options';
 import { LogInterface, LogLevels, setLogLevel, voidLog} from './utils/log';
 import { ErrorCodes, GError } from './error';
 import Chalk from 'chalk';
@@ -12,7 +12,6 @@ import {resolve} from 'path';
 import { Context } from './context';
 import ProxyAddr from 'proxy-addr';
 import { render } from './utils/render';
-import Etag from 'etag';
 // import GridfwRouter from 'gridfw-tree-router';
 /**
  * Gridfw
@@ -20,24 +19,14 @@ import Etag from 'etag';
 export class Gridfw<TSession, TI18n> implements LogInterface{
 	/** Framework version */
 	static version= JSON.parse(readFileSync('package.json', 'utf-8')).version
-	/** App name */
-	readonly name?: string
-	/** Author */
-	readonly author?: string
-	/** Author email */
-	readonly email?: string
-	/** App version */
-	readonly version?: string
-	/** If production mode */
-	readonly isProd: boolean
 	/** Underlying http2 server  */
 	readonly server: Http2.Http2SecureServer|Http.Server;
 	/** If this is a secure connection */
 	readonly secure:	boolean
 	/** Check used protocol */
 	readonly protocol:	Protocols
-	/** If send pretty rendering (for HTML, JSON, ...) */
-	pretty: boolean
+	/** Options */
+	readonly options: Omit<Options, 'baseURL'>;
 
 	/** Base URL */
 	baseURL:	URL
@@ -53,33 +42,8 @@ export class Gridfw<TSession, TI18n> implements LogInterface{
 	/** Locals, common data on all views */
 	data:	Record<string, any>= {app: this}
 
-	/** JSONP Callback query param */
-	jsonpParam: string;
-
-	/** Listen options */
-	private _listenOptions: Options['listen'];
-	/** Path to views folder */
-	_viewsPath: string;
-	/** Cookie crypt key */
-	_cookieSecret: string;
-
-	/** Trust proxy */
-	trustProxy: (addr: string, i: number) => boolean
-
-	/**
-	 * Etag
-	 * Override this method to implement custom etag or disable it
-	 */
-	etag= Etag
-
-	constructor(options?: Options){
-		options= {...options} as Options;
-		//* Info
-		this.name=		options.name;
-		this.author=	options.author;
-		this.email=		options.email;
-		this.version=	options.version;
-		this.isProd=	options.isProd ?? false;
+	constructor(options: Partial<Options>={}){
+		this.options= initOptions(options as Partial<Options>);
 		//* Base URL
 		if(options.baseURL==null){
 			this.baseURL= new URL('http://localhost');
@@ -89,11 +53,10 @@ export class Gridfw<TSession, TI18n> implements LogInterface{
 			this._baseURLAuto= false;
 		}
 		//* Listen options
-		this._listenOptions= options.listen;
-		this.protocol= options.protocol ?? Protocols.http;
+		this.protocol= options.protocol!;
 		//* Options
 		//* create server
-		switch(this.protocol){
+		switch(options.protocol!){
 			case Protocols.http:
 				// HTTP 1.1
 				this.secure= false;

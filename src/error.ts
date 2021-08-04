@@ -16,7 +16,9 @@ export enum ErrorCodes{
 	/** File sending aborted */
 	SEND_FILE_ABORTED,
 	/** Unknown error */
-	UNKOWN_ERROR
+	UNKOWN_ERROR,
+	/** Uploader error */
+	UPLOAD_ERROR
 }
 
 /** ERROR */
