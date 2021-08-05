@@ -10,7 +10,8 @@ import { upload, UploaderOptions } from '../utils/uploader';
 /**
  * HTTP1.1 request
  */
-export class Request<TSession, TI18n> extends IncomingMessage{
+export class Request<TSession, TI18n extends I18nInterface> extends IncomingMessage{
+	readonly app!: Gridfw<TSession, TI18n>;
 	/** Uploading promsie */
 	private _uploading?: Promise<any>= undefined;
 	/** Accepts */
@@ -188,7 +189,7 @@ export class Request<TSession, TI18n> extends IncomingMessage{
 	 *
 	 * @optional @param {Boolean} parse - do parse JSON and XML. Save as file otherwise
 	 */
-	 upload(options?: UploaderOptions): Promise<any>{
+	upload(options?: UploaderOptions): Promise<any>{
 		return this._uploading ??= upload(this, options);
 	}
 	
@@ -209,4 +210,12 @@ export enum ContentTypes{
 	webp=			'image/webp',
 	multipart=		'multipart/form-data',
 	formUrlEncoded=	'application/x-www-form-urlencoded'
+}
+
+/** I18N format */
+export interface I18nInterface{
+	/** Current locale code */
+	locale: string
+	// Other fields
+	[k: string]: any
 }

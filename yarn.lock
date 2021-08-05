@@ -1900,6 +1900,11 @@ lru-queue@^0.1.0:
   dependencies:
     es5-ext "~0.10.2"
 
+lru-ttl-cache@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/lru-ttl-cache/-/lru-ttl-cache-2.3.0.tgz#b0086bd3dcec6be69b9ecf9b00d7c8131182e2b2"
+  integrity sha512-ZrctxuzP4ZP1kQVoiCnwWBu+m+y7Uaf3OFPKkYU/qDooI9kJIBSI66HixhuNrlkt8O5D1nFBzGMi651R8UdI0A==
+
 make-error@^1.1.1:
   version "1.3.6"
   resolved "https://registry.yarnpkg.com/make-error/-/make-error-1.3.6.tgz#2eb2e37ea9b67c4891f684a1394799af484cf7a2"

@@ -2,7 +2,9 @@ import type Http2 from 'http2';
 import type Https from 'https';
 import type Net from 'net';
 import Etag from 'etag';
+import ProxyAddr from 'proxy-addr';
 import { LogLevels } from './utils/log';
+import { ErrorCodes, GError } from './error';
 
 /** Supported http protocols */
 export enum Protocols{
@@ -51,8 +53,19 @@ export interface BOptions{
 	// 	/** Cookie crypt salt */
 	// 	secret: string
 	// }
-	/** Views folder path */
+	/** Views path */
 	views: string
+	/** Views cache */
+	viewsCache:{
+		/** Max entries @default Infinity */
+		max:		number,
+		/** Max bytes @default Infinity */
+		maxBytes:	number,
+		/** Time to live @default Infinity */
+		ttl:    	number|string,
+		/** TTL check interval. @default 60s */
+		ttlInterval:    60000
+	}
 
 	/**
 	 * Trust proxy: ( type= IPv4 | IPv6 | IPv4/netmask | IPv6/netmask | type[] ) or resolverFx
@@ -63,11 +76,19 @@ export interface BOptions{
 	 */
 	trustProxy: string | string[] | ((addr: string, i: number) => boolean)
 
+	/** Default encoding */
+	encoding: BufferEncoding
 	/** Etag generator */
 	etag: boolean | ((entity: string | Buffer | Etag.StatsLike, options?: Etag.Options | undefined)=> string)
 	
 	/** JSONP Callback query param */
 	jsonpParam: string
+
+	/** Error management */
+	errors: {
+		[k: number]: (err: Error|GError)=> void
+		else: (err: Error|GError)=> void
+	}
 }
 
 /** HTTP 1.1 options */
@@ -97,5 +118,12 @@ export function initOptions(options: Partial<Options>): Options{
 	options.defaultLocale ??= 'en';
 	//* Etag
 	if(result.etag==null || result.etag===true) result.etag= Etag;
+	else if(typeof result.etag !== 'function') throw new GError(ErrorCodes.OPTIONS, 'Illegal value for "etag" option');
+	//* Trust proxy
+	if(options.trustProxy==null){
+		options.trustProxy= ProxyAddr.compile('127.0.0.1');
+	} else if(typeof options.trustProxy!=='function'){
+		options.trustProxy= ProxyAddr.compile(options.trustProxy!);
+	}
 	return result;
 }

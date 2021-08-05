@@ -1,6 +1,7 @@
 import Http from 'http';
 import Https from 'https';
 import Http2 from 'http2';
+import type {Socket} from 'net';
 import type Net from 'net';
 import {readFileSync} from 'fs';
 import { handleRequest } from './handle-request';
@@ -8,15 +9,20 @@ import { Https_Options, initOptions, Options, Protocols } from './options';
 import { LogInterface, LogLevels, setLogLevel, voidLog} from './utils/log';
 import { ErrorCodes, GError } from './error';
 import Chalk from 'chalk';
-import {resolve} from 'path';
-import { Context } from './context';
-import ProxyAddr from 'proxy-addr';
+import LRU_TTL_CACHE from 'lru-ttl-cache';
 import { render } from './utils/render';
+import {I18nInterface, Request} from './http/request';
+import {Response} from './http/response';
 // import GridfwRouter from 'gridfw-tree-router';
 /**
  * Gridfw
  */
-export class Gridfw<TSession, TI18n> implements LogInterface{
+export class Gridfw<TSession, TI18n extends I18nInterface> implements LogInterface{
+	/** Request class */
+	Request:	new (socket: Socket)=> Request<TSession, TI18n>;
+	/** Response */
+	Response:	new (req: Request<TSession, TI18n>)=> Response<TSession, TI18n>;
+
 	/** Framework version */
 	static version= JSON.parse(readFileSync('package.json', 'utf-8')).version
 	/** Underlying http2 server  */
@@ -27,6 +33,10 @@ export class Gridfw<TSession, TI18n> implements LogInterface{
 	readonly protocol:	Protocols
 	/** Options */
 	readonly options: Omit<Options, 'baseURL'>;
+
+	/** Views cache */
+	// TODO adjust view cache
+	readonly _viewCache= new LRU_TTL_CACHE();
 
 	/** Base URL */
 	baseURL:	URL
@@ -43,7 +53,8 @@ export class Gridfw<TSession, TI18n> implements LogInterface{
 	data:	Record<string, any>= {app: this}
 
 	constructor(options: Partial<Options>={}){
-		this.options= initOptions(options as Partial<Options>);
+		this.options= options= initOptions(options);
+		const app= this;
 		//* Base URL
 		if(options.baseURL==null){
 			this.baseURL= new URL('http://localhost');
@@ -52,6 +63,14 @@ export class Gridfw<TSession, TI18n> implements LogInterface{
 			this.baseURL=	options.baseURL;
 			this._baseURLAuto= false;
 		}
+		//* Request Class
+		this.Request= class extends Request<TSession, TI18n>{
+			readonly app= app;
+		};
+		//* Response Class
+		this.Response= class extends Response<TSession, TI18n>{
+			readonly app= app;
+		};
 		//* Listen options
 		this.protocol= options.protocol!;
 		//* Options
@@ -60,7 +79,9 @@ export class Gridfw<TSession, TI18n> implements LogInterface{
 			case Protocols.http:
 				// HTTP 1.1
 				this.secure= false;
-				this.server= Http.createServer();
+				this.server= Http.createServer({
+
+				});
 				break;
 			case Protocols.https:
 				// HTTPs 1.1
@@ -99,12 +120,7 @@ export class Gridfw<TSession, TI18n> implements LogInterface{
 		this._defaultLocale= options.defaultLocale?.toLowerCase() ?? 'en';
 		this.reloadLoadI18n();
 		//* Views
-		this._viewsPath= options.views;
-		//* Trust proxy
-		if(typeof options.trustProxy==='function')
-			this.trustProxy= options.trustProxy;
-		else
-			this.trustProxy= ProxyAddr.compile(options.trustProxy);
+		this._viewCache
 		//* Cookie secret
 		this._cookieSecret= options.cookieSecret ?? 'gw';
 		//* Pretty

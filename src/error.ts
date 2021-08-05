@@ -1,4 +1,6 @@
 export enum ErrorCodes{
+	/** App options error */
+	OPTIONS,
 	/** Internal error */
 	InternalError,
 	/** Unknown locale */
@@ -18,7 +20,9 @@ export enum ErrorCodes{
 	/** Unknown error */
 	UNKOWN_ERROR,
 	/** Uploader error */
-	UPLOAD_ERROR
+	UPLOAD_ERROR,
+	/** Missing req.i18n (when render views) */
+	MISSING_I18N
 }
 
 /** ERROR */

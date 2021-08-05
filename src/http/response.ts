@@ -11,17 +11,16 @@ import OnFinishedLib from 'on-finished';
 import ParseMilliseconds from 'ms';
 import {lookup as mimeTypeLookup} from 'mime-types';
 import { Gridfw } from '..';
-import { ContentTypes, Request } from './request';
+import { ContentTypes, I18nInterface, Request } from './request';
 import { render } from '../utils/render';
 import { ErrorCodes, GError } from '@src/error';
 
 /**
  * HTTP1.1 server response
  */
-export class Response<TSession, TI18n> extends ServerResponse{
+export class Response<TSession, TI18n extends I18nInterface> extends ServerResponse{
 	/** Current app */
-	//@ts-ignore
-	readonly app: Gridfw<TSession, TI18n>;
+	readonly app!: Gridfw<TSession, TI18n>;
 	readonly req: Request<TSession, TI18n>;
 	
 	/** I18n map */
@@ -145,7 +144,9 @@ export class Response<TSession, TI18n> extends ServerResponse{
 	async render(path: string, data?: Record<string, any>){
 		var app= this.app;
 		data= data==null? this.data : {...this.data, ...data};
-		var html= await render(app._viewCache, app.options.viewsPath, this.i18n.locale, path, data);
+		if(this.i18n==null)
+			throw new GError(ErrorCodes.MISSING_I18N, 'res.render>> Expected i18n')
+		var html= await render(app._viewCache, app.options.views, this.i18n.locale, path, data);
 		return this.send(html, ContentTypes.html);
 	}
 	
@@ -269,7 +270,8 @@ export class Response<TSession, TI18n> extends ServerResponse{
 				data= Buffer.from(data, encoding);
 			}
 			//* Calc Etag
-			if(!this.hasHeader('ETag')) this.setHeader('ETag', (options.etag as Function)(data as Buffer));
+			if(!this.hasHeader('etag'))
+				this.setHeader('etag', (options.etag as Function)(data as Buffer));
 			//* freshness
 			if(this.fresh) this.statusCode = 304;
 			//* Status code
@@ -281,16 +283,17 @@ export class Response<TSession, TI18n> extends ServerResponse{
 				this.removeHeader('Content-Length');
 				this.removeHeader('Transfer-Encoding');
 				// @ts-ignore
-				this.end(resolve);
+				super.end(resolve);
 			} else {
 				// populate Content-Length
 				this.setHeader('Content-Length', data.length);
 				// Content type
 				this.setHeader('Content-Type', encoding==null? contentType : `${contentType}; charset=${encoding}`);
 				if(req.method === 'HEAD')
-					return this.end(resolve);
+					return super.end(resolve);
 				else {
-					return this.end(data, encoding, resolve);
+					//@ts-ignore
+					return super.end(data, encoding, resolve);
 				}
 			}
 		});
