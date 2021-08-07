@@ -5,6 +5,9 @@ import Etag from 'etag';
 import ProxyAddr from 'proxy-addr';
 import { LogLevels } from './utils/log';
 import { ErrorCodes, GError } from './error';
+// TODO import from root package
+import {Options as RouterOptions, DEFAULT_OPTIONS as ROUTER_DEFAULT_OPTIONS} from 'gridfw-tree-router';
+import { RenderFx } from './utils/render';
 
 /** Supported http protocols */
 export enum Protocols{
@@ -18,7 +21,7 @@ export enum Protocols{
  * Gridfw options
  */
 export type Options= Http_Options | Https_Options | Http2_Options;
-export interface BOptions{
+export interface BOptions extends RouterOptions{
 	/** is production mode */
 	isProd:		boolean
 	/**
@@ -53,18 +56,20 @@ export interface BOptions{
 	// 	/** Cookie crypt salt */
 	// 	secret: string
 	// }
-	/** Views path */
+	/** Views path for prod mode */
 	views: string
+	/** Generate views in dev mode */
+	viewsDev: (path:string, locale: string, data: any)=> string
 	/** Views cache */
 	viewsCache:{
 		/** Max entries @default Infinity */
-		max:		number,
+		max?:		number,
 		/** Max bytes @default Infinity */
-		maxBytes:	number,
+		maxBytes?:	number,
 		/** Time to live @default Infinity */
-		ttl:    	number|string,
+		ttl?:    	number|string,
 		/** TTL check interval. @default 60s */
-		ttlInterval:    60000
+		ttlInterval?:    number|string
 	}
 
 	/**
@@ -109,7 +114,7 @@ export interface Http2_Options extends BOptions{
 }
 
 export function initOptions(options: Partial<Options>): Options{
-	var result= {...options} as Options;
+	var result= {...ROUTER_DEFAULT_OPTIONS, ...options} as Options;
 	result.isProd??= false;
 	result.pretty??= result.isProd;
 	//* Protocol

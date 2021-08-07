@@ -12,7 +12,6 @@ import ParseMilliseconds from 'ms';
 import {lookup as mimeTypeLookup} from 'mime-types';
 import { Gridfw } from '..';
 import { ContentTypes, I18nInterface, Request } from './request';
-import { render } from '../utils/render';
 import { ErrorCodes, GError } from '@src/error';
 
 /**
@@ -142,11 +141,9 @@ export class Response<TSession, TI18n extends I18nInterface> extends ServerRespo
 
 	/** Render and send view */
 	async render(path: string, data?: Record<string, any>){
-		var app= this.app;
-		data= data==null? this.data : {...this.data, ...data};
 		if(this.i18n==null)
-			throw new GError(ErrorCodes.MISSING_I18N, 'res.render>> Expected i18n')
-		var html= await render(app._viewCache, app.options.views, this.i18n.locale, path, data);
+			throw new GError(ErrorCodes.MISSING_I18N, 'res.render>> Expected i18n');
+		var html= await this.app._render(this.i18n.locale, path, this.data, data);
 		return this.send(html, ContentTypes.html);
 	}
 	
@@ -169,7 +166,7 @@ export class Response<TSession, TI18n extends I18nInterface> extends ServerRespo
 
 	/** Send XML */
 	xml(data: any){
-		data= XMLConverter.js2xml(data, {spaces: this.app.pretty ? "\t" : 0});
+		data= XMLConverter.js2xml(data, {spaces: this.app.options.pretty ? "\t" : 0});
 		return this.send(data, ContentTypes.xml);
 	}
 	
@@ -307,7 +304,7 @@ export class Response<TSession, TI18n extends I18nInterface> extends ServerRespo
 	
 }
 
-export interface ResponseData<TSession, TI18n>{
+export interface ResponseData<TSession, TI18n extends I18nInterface>{
 	app:	Gridfw<TSession, TI18n>,
 	i18n?:	TI18n
 	req:	Request<TSession, TI18n>

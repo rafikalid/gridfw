@@ -10,14 +10,17 @@ import { LogInterface, LogLevels, setLogLevel, voidLog} from './utils/log';
 import { ErrorCodes, GError } from './error';
 import Chalk from 'chalk';
 import LRU_TTL_CACHE from 'lru-ttl-cache';
-import { render } from './utils/render';
+import {resolve} from 'path';
+import { renderForDev, RenderFx } from './utils/render';
 import {I18nInterface, Request} from './http/request';
 import {Response} from './http/response';
+import {GridfwRouter} from 'gridfw-tree-router';
+import type { Controller } from './http/controller';
 // import GridfwRouter from 'gridfw-tree-router';
 /**
  * Gridfw
  */
-export class Gridfw<TSession, TI18n extends I18nInterface> implements LogInterface{
+export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<Controller<TSession, TI18n>> implements LogInterface{
 	/** Request class */
 	Request:	new (socket: Socket)=> Request<TSession, TI18n>;
 	/** Response */
@@ -36,7 +39,7 @@ export class Gridfw<TSession, TI18n extends I18nInterface> implements LogInterfa
 
 	/** Views cache */
 	// TODO adjust view cache
-	readonly _viewCache= new LRU_TTL_CACHE();
+	readonly _viewCache: LRU_TTL_CACHE<string, RenderFx>;
 
 	/** Base URL */
 	baseURL:	URL
@@ -53,6 +56,7 @@ export class Gridfw<TSession, TI18n extends I18nInterface> implements LogInterfa
 	data:	Record<string, any>= {app: this}
 
 	constructor(options: Partial<Options>={}){
+		super(options);
 		this.options= options= initOptions(options);
 		const app= this;
 		//* Base URL
@@ -120,13 +124,11 @@ export class Gridfw<TSession, TI18n extends I18nInterface> implements LogInterfa
 		this._defaultLocale= options.defaultLocale?.toLowerCase() ?? 'en';
 		this.reloadLoadI18n();
 		//* Views
-		this._viewCache
-		//* Cookie secret
-		this._cookieSecret= options.cookieSecret ?? 'gw';
-		//* Pretty
-		this.pretty= options.pretty ?? this.isProd;
-		//* JSONP
-		this.jsonpParam= options.jsonpParam ?? 'cb';
+		this._viewCache= new LRU_TTL_CACHE(options.viewsCache);
+		//* Views in dev mode
+		if(!options.isProd && options.viewsDev){
+			this._render= renderForDev(options.viewsDev);
+		}
 	}
 	
 	//* Log
@@ -171,7 +173,7 @@ export class Gridfw<TSession, TI18n extends I18nInterface> implements LogInterfa
 	 */
 	listen(){
 		const server= this.server;
-		server.listen(this._listenOptions);
+		server.listen(this.options.listen);
 		// server.on('error', function(err: any){
 		// 	console.log('error>> ', err);
 		// });
@@ -202,6 +204,7 @@ export class Gridfw<TSession, TI18n extends I18nInterface> implements LogInterfa
 
 	/** Print app status */
 	printStatus(){
+		var options= this.options;
 		console.log(Chalk.blueBright(`
 ╒═════════════════════════════════════════════════════════════════════════════╕
 
@@ -214,10 +217,10 @@ export class Gridfw<TSession, TI18n extends I18nInterface> implements LogInterfa
 \t\t\tFramework version: ${Gridfw.version}
 
 \tREADY
-\t√ App name: ${this.name ?? '< Untitled >'}
-\t√ App Author: ${this.author ?? '< Unknown >'}
-\t√ Admin email: ${this.email ?? '<No email>'}
-\t${this.isProd? Chalk.green('√ Production Mode') : Chalk.keyword('orange')("[X] Development Mode.\n\t[!] Enable prodution mode to boost performance")}
+\t√ App name: ${options.name ?? '< Untitled >'}
+\t√ App Author: ${options.author ?? '< Unknown >'}
+\t√ Admin email: ${options.email ?? '<No email>'}
+\t${options.isProd? Chalk.green('√ Production Mode') : Chalk.keyword('orange')("[X] Development Mode.\n\t[!] Enable prodution mode to boost performance")}
 \t${Chalk.green(`█ Server listening At: ${this.baseURL.href}`)}
 ╘═════════════════════════════════════════════════════════════════════════════╛`));
 		return this;
@@ -225,8 +228,23 @@ export class Gridfw<TSession, TI18n extends I18nInterface> implements LogInterfa
 
 	/** Render view */
 	render(locale: string, path: string, data?: Record<string, any>){
-		data= data==null? this.data : {...this.data, ...data};
-		return render(this._viewCache, this._viewsPath, locale, path, data);
+		return this._render(locale, path, data);
+	}
+	/** Apply render */
+	async _render(locale: string, path: string, data1?: Record<string, any>, data2?: Record<string, any>): Promise<string>{
+		try {
+			var data: Record<string, any>= {...this.data, ...data1, ...data2};
+			path= `${locale}${path.charAt(0)==='/'?'': '/'}${path}`;
+			// var options= this.options;
+			// var viewPath= resolve(options.views, locale, path)+'.js';
+			var renderFx= await this._viewCache.upsert(path);
+			return renderFx(data);
+		} catch (err) {
+			if(err?.code==='ENOENT')
+				throw new GError(ErrorCodes.VIEW_NOT_FOUND, `Missing view "${path}" for locale "${locale}" at: ${resolve(this.options.views, path)}.js `);
+			else
+				throw new GError(ErrorCodes.VIEW_ERROR, `Error at view "${resolve(this.options.views, path)}.js"`, err);
+		}
 	}
 }
 
