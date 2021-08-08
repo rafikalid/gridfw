@@ -5,7 +5,8 @@ import ProxyAddr from 'proxy-addr';
 import {parse as ContentTypeParse, ParsedMediaType} from 'content-type';
 import RangeParser from 'range-parser';
 import { Gridfw } from '..';
-import { upload, UploaderOptions } from '../utils/uploader';
+import { upload } from '../utils/uploader';
+import { Options } from '@src/options';
 
 /**
  * HTTP1.1 request
@@ -189,7 +190,7 @@ export class Request<TSession, TI18n extends I18nInterface> extends IncomingMess
 	 *
 	 * @optional @param {Boolean} parse - do parse JSON and XML. Save as file otherwise
 	 */
-	upload(options?: UploaderOptions): Promise<any>{
+	upload(options?: Options['upload']): Promise<any>{
 		return this._uploading ??= upload(this, options);
 	}
 	

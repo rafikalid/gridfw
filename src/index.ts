@@ -5,7 +5,7 @@ import type {Socket} from 'net';
 import type Net from 'net';
 import {readFileSync} from 'fs';
 import { handleRequest } from './handle-request';
-import { Https_Options, initOptions, Options, Protocols } from './options';
+import { Https_Options, initOptions, Options, ParsedOptions, Protocols } from './options';
 import { LogInterface, LogLevels, setLogLevel, voidLog} from './utils/log';
 import { ErrorCodes, GError } from './error';
 import Chalk from 'chalk';
@@ -35,7 +35,7 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 	/** Check used protocol */
 	readonly protocol:	Protocols
 	/** Options */
-	readonly options: Omit<Options, 'baseURL'>;
+	readonly options: Omit<ParsedOptions, 'baseURL'>;
 
 	/** Views cache */
 	// TODO adjust view cache
