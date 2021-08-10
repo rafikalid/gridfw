@@ -9,8 +9,10 @@ import { ErrorCodes, GError } from './error';
 import {Options as RouterOptions, DEFAULT_OPTIONS as ROUTER_DEFAULT_OPTIONS} from 'gridfw-tree-router';
 import { RenderFx } from './utils/render';
 import Bytes from 'bytes';
-import { upload } from './utils/uploader';
+import type { FileUploadOptions } from './utils/uploader';
 import {tmpdir} from 'os';
+import {Request} from './http/request';
+import type {WriteStream} from 'fs';
 
 /** Supported http protocols */
 export enum Protocols{
@@ -98,31 +100,10 @@ export interface BOptions extends RouterOptions{
 		else: (err: Error|GError)=> void
 	}
 	/** Upload options */
-	upload:{
-		/** Upload timeout */
-		timeout?: number|string
-		/** Temp directory, @default os.dir */
-		tempDir?: string
-		/** Limit file */
-		limits?: {
-			/** Max field name size (in bytes) (Default: 255 bytes) */
-			fieldNameSize?: number | string;
-			/** Max field value size (in bytes) (Default: 1MB). */
-			fieldSize?: number | string;
-			/** Max number of non-file fields (Default: Infinity) */
-			fields?: number;
-			/** For multipart forms, the max file size (in bytes) (Default: Infinity) */
-			fileSize?: number | string;
-			/** For multipart forms, the max number of file fields (Default: Infinity). */
-			files?: number;
-			/** For multipart forms, the max number of file fields (Default: Infinity).  */
-			parts?: number;
-			/** For multipart forms, the max number of header key=>value pairs to parse Default: 2000 (same as node's http). */
-			headerPairs?: number;
-		}
-	}
+	upload: uploadOptions
 }
 
+/** Parsed options */
 export interface ParsedOptions extends BOptions{
 	/** Views cache */
 	viewsCache:{
@@ -147,30 +128,71 @@ export interface ParsedOptions extends BOptions{
 	/** Etag generator */
 	etag: (entity: string | Buffer | Etag.StatsLike, options?: Etag.Options | undefined)=> string
 	/** Upload options */
-	upload:{
-		/** Upload timeout */
-		timeout:	number,
-		/** Temp directory, @default os.dir */
-		tempDir:	string
-		/** Limit file */
-		limits: {
-			/** Max field name size (in bytes) (Default: 255 bytes) */
-			fieldNameSize: number;
-			/** Max field value size (in bytes) (Default: 1MB). */
-			fieldSize: number;
-			/** Max number of non-file fields (Default: Infinity) */
-			fields: number;
-			/** For multipart forms, the max file size (in bytes) (Default: 10M) */
-			fileSize: number;
-			/** For multipart forms, the max number of file fields (Default: Infinity). */
-			files: number;
-			/** For multipart forms, the max number of file fields (Default: Infinity).  */
-			parts: number;
-			/** For multipart forms, the max number of header key=>value pairs to parse Default: 2000 (same as node's http). */
-			headerPairs: number;
-		}
-	}
+	upload: uploadOptionsParsed
 }
+
+/** Upload options */
+export interface uploadOptions{
+	/** Upload timeout */
+	timeout?: number|string
+	/** Temp directory, @default os.dir */
+	tempDir?: string
+	/** Limit file */
+	limits?: UploadLimits
+	/**
+	 * Called when file received
+	 * @return string		- Set file target absolute path or change file extension (if starts with '.')
+	 * @return WriteStream	- Set traget write stream
+	 * @return Record<string, any>	- return result as it is, will do noting more with the file (up to user to uploaded it or cancel it!)
+	 * @return false		- Cancel file upload and ignore it
+	 * @return undefined	- Keep default: upload file to temp file
+	 */
+	onFile?: (
+		this: Request<any, any>,
+		filename: string,
+		file: NodeJS.ReadableStream,
+		fieldname: string|undefined,
+		encoding: BufferEncoding|undefined,
+		mimetype: string|undefined,
+		options: FileUploadOptions
+	)=> string|WriteStream|Record<string, any>|false|undefined
+}
+export interface uploadOptionsParsed extends uploadOptions{
+	/** Upload timeout */
+	timeout:	number,
+	/** Limit file */
+	limits: UploadLimitsParsed
+}
+/** Upload limits */
+export interface UploadLimits{
+	/** Request body size */
+	size: number|string,
+	/** Max field name size (in bytes) (Default: 255 bytes) */
+	fieldNameSize?: number | string;
+	/** Max field value size (in bytes) (Default: 1MB). */
+	fieldSize?: number | string;
+	/** Max number of non-file fields (Default: Infinity) */
+	fields?: number;
+	/** For multipart forms, the max file size (in bytes) (Default: Infinity) */
+	fileSize?: number | string;
+	/** For multipart forms, the max number of file fields (Default: Infinity). */
+	files?: number;
+	/** For multipart forms, the max number of file fields (Default: Infinity).  */
+	parts?: number;
+	/** For multipart forms, the max number of header key=>value pairs to parse Default: 2000 (same as node's http). */
+	headerPairs?: number;
+}
+export interface UploadLimitsParsed extends UploadLimits{
+	/** Request body size */
+	size: number,
+	/** Max field name size (in bytes) (Default: 255 bytes) */
+	fieldNameSize: number;
+	/** Max field value size (in bytes) (Default: 1MB). */
+	fieldSize: number;
+	/** For multipart forms, the max file size (in bytes) (Default: 10M) */
+	fileSize: number;
+}
+
 
 export const DEFAULT_OPTIONS: Omit<ParsedOptions, 'baseURL'|'pretty'| 'trustProxy'| keyof typeof ROUTER_DEFAULT_OPTIONS>= {
 	isProd:		false,
@@ -209,6 +231,8 @@ export const DEFAULT_OPTIONS: Omit<ParsedOptions, 'baseURL'|'pretty'| 'trustProx
 		tempDir: tmpdir(),
 		/** Limit file */
 		limits: {
+			/** Request body sizes */
+			size: 10*2**10, // 10MB
 			/** Max field name size (in bytes) (Default: 255 bytes) */
 			fieldNameSize: 255,
 			/** Max field value size (in bytes) (Default: 1MB). */
@@ -260,21 +284,22 @@ export function initOptions(options: Partial<Options>): ParsedOptions{
 	if(opts.upload!==DEFAULT_OPTIONS.upload){
 		opts.upload= {...DEFAULT_OPTIONS.upload, ...opts.upload};
 		if(opts.upload.limits!==DEFAULT_OPTIONS.upload.limits){
-			opts.upload.limits= uploadLimits({...DEFAULT_OPTIONS.upload.limits, ...opts.upload.limits});
+			opts.upload.limits= UploadLimits({...DEFAULT_OPTIONS.upload.limits, ...opts.upload.limits});
 		}
 	}
 	return opts as ParsedOptions;
 }
 
-export function uploadLimits(limits: NonNullable<Options['upload']['limits']>): ParsedOptions['upload']['limits']{
+export function UploadLimits(limits: NonNullable<UploadLimits>): UploadLimitsParsed{
+	// Request size
+	if(typeof limits.size === 'string')
+		limits.size= Bytes(limits.size);
 	// fieldNameSize
 	if(typeof limits.fieldNameSize === 'string')
 		limits.fieldNameSize= Bytes(limits.fieldNameSize);
-	else limits.fieldNameSize??= 255;
 	// fieldSize
 	if(typeof limits.fieldSize === 'string') limits.fieldSize= Bytes(limits.fieldSize);
 	// fileSize
 	if(typeof limits.fileSize === 'string') limits.fileSize= Bytes(limits.fileSize);
-	else limits.fileSize ??= 10 * 2**20; // 10Mb
-	return limits as ParsedOptions['upload']['limits'];
+	return limits as UploadLimitsParsed;
 }

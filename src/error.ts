@@ -21,6 +21,14 @@ export enum ErrorCodes{
 	UNKOWN_ERROR,
 	/** Uploader error */
 	UPLOAD_ERROR,
+	/** Uplaod max size exceeded */
+	UPLOAD_MAX_BODY_SIZE,
+	/** Multipart file max size */
+	UPLOAD_MAX_FILE_SIZE,
+	/** Wrong uploaded content type */
+	UPLOAD_CONTENT_TYPE,
+	/** Unsupported upload encoding */
+	UPLOAD_ENCODING,
 	/** Missing req.i18n (when render views) */
 	MISSING_I18N
 }

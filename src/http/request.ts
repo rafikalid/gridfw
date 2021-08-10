@@ -5,8 +5,9 @@ import ProxyAddr from 'proxy-addr';
 import {parse as ContentTypeParse, ParsedMediaType} from 'content-type';
 import RangeParser from 'range-parser';
 import { Gridfw } from '..';
-import { upload } from '../utils/uploader';
-import { Options } from '@src/options';
+import { getBody, upload } from '../utils/uploader';
+import { Options, UploadLimits, uploadOptions } from '@src/options';
+import { ErrorCodes, GError } from '@src/error';
 
 /**
  * HTTP1.1 request
@@ -15,6 +16,7 @@ export class Request<TSession, TI18n extends I18nInterface> extends IncomingMess
 	readonly app!: Gridfw<TSession, TI18n>;
 	/** Uploading promsie */
 	private _uploading?: Promise<any>= undefined;
+	private _uploadBuffer?: Promise<Buffer|string>= undefined;
 	/** Accepts */
 	private _accepts: Accepts.Accepts|undefined= undefined;
 	/** Current app */
@@ -190,10 +192,22 @@ export class Request<TSession, TI18n extends I18nInterface> extends IncomingMess
 	 *
 	 * @optional @param {Boolean} parse - do parse JSON and XML. Save as file otherwise
 	 */
-	upload(options?: Options['upload']): Promise<any>{
-		return this._uploading ??= upload(this, options);
+	upload(options?: uploadOptions): Promise<any>{
+		if(this._uploading==null){
+			if(this._uploadBuffer!=null) throw new GError(ErrorCodes.UPLOAD_ERROR, 'Could not call "upload" and "uploadBuffer" with the same request!');
+			return this._uploading= upload(this, options);
+		}
+		return this._uploading;
 	}
-	
+
+	/** Upload as buffer or string (depending on sent charset) */
+	uploadBuffered(maxSize?: number|string): Promise<Buffer|string>{
+		if(this._uploadBuffer==null){
+			if(this._uploading!=null) throw new GError(ErrorCodes.UPLOAD_ERROR, 'Could not call "upload" and "uploadBuffer" with the same request!');
+			return this._uploadBuffer= getBody(this, maxSize);
+		}
+		return this._uploadBuffer;
+	}
 }
 
 
