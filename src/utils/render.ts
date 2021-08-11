@@ -7,7 +7,7 @@ import { Options } from "@src/options";
 export type RenderFx= (data: any)=> string
 
 /** Generate view render method for dev mode */
-export function renderForDev(cb: Options['viewsDev']){
+export function renderForDev(cb: NonNullable<Options['viewsDev']>){
 	return async function (this: Gridfw<any, any>, locale: string, path: string, data1?: Record<string, any>, data2?: Record<string, any>): Promise<string>{
 		try {
 			var data: Record<string, any>= {...this.data, ...data1, ...data2};

@@ -12,6 +12,7 @@ import Bytes from 'bytes';
 import type { FileUploadOptions } from './utils/uploader';
 import {tmpdir} from 'os';
 import {Request} from './http/request';
+import {Response} from './http/response';
 import type {WriteStream} from 'fs';
 
 /** Supported http protocols */
@@ -96,12 +97,14 @@ export interface BOptions extends RouterOptions{
 
 	/** Error management */
 	errors: {
-		[k: number]: (err: Error|GError)=> void
-		else: (err: Error|GError)=> void
+		[k: number]: ErrorHandler
+		else: ErrorHandler
 	}
 	/** Upload options */
 	upload: uploadOptions
 }
+
+export type ErrorHandler= (err: Error|GError, req: Request<any, any>, resp: Response<any, any>)=> void
 
 /** Parsed options */
 export interface ParsedOptions extends BOptions{

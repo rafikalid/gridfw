@@ -4,7 +4,6 @@ import Http2 from 'http2';
 import type {Socket} from 'net';
 import type Net from 'net';
 import {readFileSync} from 'fs';
-import { handleRequest } from './handle-request';
 import { Https_Options, initOptions, Options, ParsedOptions, Protocols } from './options';
 import { LogInterface, LogLevels, setLogLevel, voidLog} from './utils/log';
 import { ErrorCodes, GError } from './error';
@@ -117,7 +116,8 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 				throw new Error(`Enexpected protocol: ${this.protocol}, valid values are: Protocols.http, Protocols.https and Protocols.http2`);
 		}
 		//* Listener
-		this.server.on('request', handleRequest.bind(this));
+		this.handle= this.handle.bind(this); // enable to use this method by external services
+		this.server.on('request', this.handle);
 		//* Log
 		this.setLogLevel(options.logLevel ?? (options.isProd? LogLevels.warn : LogLevels.debug));
 		//* I18N
@@ -191,6 +191,10 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 		this.printStatus();
 		return this;
 	}
+	/** Server listening */
+	get listening(){
+		return this.server.listening;
+	}
 	/** Close server connection */
 	close(): Promise<this>{
 		return new Promise((res, rej)=>{
@@ -244,6 +248,28 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 				throw new GError(ErrorCodes.VIEW_NOT_FOUND, `Missing view "${path}" for locale "${locale}" at: ${resolve(this.options.views, path)}.js `);
 			else
 				throw new GError(ErrorCodes.VIEW_ERROR, `Error at view "${resolve(this.options.views, path)}.js"`, err);
+		}
+	}
+	/** Handle request */
+	async handle(req: Request<TSession, TI18n>, resp: Response<TSession, TI18n>){
+		var controllerResponse: any;
+		try {
+			// Resolve path
+			var path= req.url!, method= req.method!;
+			var cacheKey= `${method} ${path}`;
+			var routeNode= this._routerCache.get(cacheKey);
+			
+		} catch (err) {
+			//* Handle error
+			var errors= this.options.errors;
+			if(err!=null && err.code!=null)
+				(errors[err?.code] ?? errors.else)(err, req, resp)
+			else errors.else(err, req, resp);
+		} finally {
+			// Send returned data & end request
+			if(resp.writableEnded===false){
+				await resp.send(controllerResponse);
+			}
 		}
 	}
 }
