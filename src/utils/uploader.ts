@@ -35,7 +35,7 @@ export interface FileUploadOptions extends uploadOptions{
 /**
  * Make upload
  */
-export function upload(req: Request<any, any>, options: FileUploadOptions= {}): Promise<any>{
+export function upload(req: Request<any, any>, options: FileUploadOptions= {}): Promise<UploadResult>{
 	return new Promise((resolve: (data: UploadResult)=> void, reject)=>{
 		//* Prepare
 		const appOptions= req.app.options;
@@ -317,7 +317,7 @@ export async function getBodyCb(req: Request<any, any>, maxSize: number|string|u
 }
 
 /** Result data */
-class UploadResult{
+export class UploadResult{
 	data: any
 	private _tmpFiles: string[];
 	constructor(data: any, tmpFiles: string[]){
@@ -331,6 +331,7 @@ class UploadResult{
 		for(let i=0, len=tmpFiles.length; i<len; ++i){
 			await fUnlink(tmpFiles[i]);
 		}
+		tmpFiles.length= 0;
 	}
 }
 

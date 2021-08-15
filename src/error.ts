@@ -30,7 +30,11 @@ export enum ErrorCodes{
 	/** Unsupported upload encoding */
 	UPLOAD_ENCODING,
 	/** Missing req.i18n (when render views) */
-	MISSING_I18N
+	MISSING_I18N,
+	/** Cookie max size exceeded */
+	COOKIE_MAX_LENGTH,
+	/** URL Query max size exceeded */
+	QUERY_MAX_LENGTH
 }
 
 /** ERROR */

@@ -15,6 +15,12 @@ import {I18nInterface, Request} from './http/request';
 import {Response} from './http/response';
 import {GridfwRouter} from 'gridfw-tree-router';
 import type { Controller } from './http/controller';
+import { HTTPStatus, PathResolverResult, PathResolverSuccess } from 'gridfw-tree-router/dist/node';
+import { paramType } from 'gridfw-tree-router/dist/params';
+//@ts-ignore
+import { CookieParams } from './utils/cookie';
+import { ParamMap } from './utils/path-params';
+import { QueryMap } from './utils/query-params';
 // import GridfwRouter from 'gridfw-tree-router';
 /**
  * Gridfw
@@ -254,18 +260,48 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 	async handle(req: Request<TSession, TI18n>, resp: Response<TSession, TI18n>){
 		var controllerResponse: any;
 		try {
-			// Resolve path
+			var options= this.options;
+			//* Resolve path
 			var path= req.url!, method= req.method!;
-			var cacheKey= `${method} ${path}`;
-			var routeNode= this._routerCache.get(cacheKey);
-			
+			var c= path.indexOf('?');
+			if(c===-1){
+				req.rawQuery= '';
+			} else {
+				req.rawQuery= path.substr(c+1);
+				path= path.substr(0, c);
+			}
+			req.pathname= path;
+			//* Resolve Route
+			var routeNode= this._routerCache.get(`${method} ${path}`, true, [method, path]) as PathResolverResult<Controller<TSession, TI18n>>;
+			if(routeNode.status !== HTTPStatus.OK)
+				throw routeNode.error;
+			//* Resolve Path params
+			req.params= new ParamMap(req, routeNode);
+			//* Resolve cookie params
+			req.cookies= new CookieParams(req);
+			//* Exec wrappers
+			let wrappers= routeNode.wrappers;
+			if(wrappers.length > 0){
+				var wrapperIndex= 0;
+				function next(){
+					var w= wrappers[wrapperIndex++];
+					if(w==null) return (routeNode as PathResolverSuccess<Controller<TSession, TI18n>>).controller(req, resp);
+					else return w(req, resp, next);
+				}
+				controllerResponse= await next();
+			} else {
+				controllerResponse= await (routeNode as PathResolverSuccess<Controller<TSession, TI18n>>).controller(req, resp);
+			}
 		} catch (err) {
 			//* Handle error
 			var errors= this.options.errors;
-			if(err!=null && err.code!=null)
-				(errors[err?.code] ?? errors.else)(err, req, resp)
+			if(typeof err?.code==='number')
+				(errors[err.code] ?? errors.else)(err, req, resp);
 			else errors.else(err, req, resp);
 		} finally {
+			// Clear temp files for uploading
+			if(req._uploading!=null)
+				req._uploading.then((r)=> r.clear());
 			// Send returned data & end request
 			if(resp.writableEnded===false){
 				await resp.send(controllerResponse);

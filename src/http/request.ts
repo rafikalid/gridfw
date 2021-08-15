@@ -5,9 +5,11 @@ import ProxyAddr from 'proxy-addr';
 import {parse as ContentTypeParse, ParsedMediaType} from 'content-type';
 import RangeParser from 'range-parser';
 import { Gridfw } from '..';
-import { getBody, upload } from '../utils/uploader';
+import { getBody, upload, UploadResult } from '../utils/uploader';
 import { Options, UploadLimits, uploadOptions } from '@src/options';
 import { ErrorCodes, GError } from '@src/error';
+import { LogLevels, setLogLevel, voidLog } from '@src/utils/log';
+import { QueryMap } from '@src/utils/query-params';
 
 /**
  * HTTP1.1 request
@@ -15,8 +17,8 @@ import { ErrorCodes, GError } from '@src/error';
 export class Request<TSession, TI18n extends I18nInterface> extends IncomingMessage{
 	readonly app!: Gridfw<TSession, TI18n>;
 	/** Uploading promsie */
-	private _uploading?: Promise<any>= undefined;
-	private _uploadBuffer?: Promise<Buffer|string>= undefined;
+	_uploading?: Promise<UploadResult>= undefined;
+	_uploadBuffer?: Promise<Buffer|string>= undefined;
 	/** Accepts */
 	private _accepts: Accepts.Accepts|undefined= undefined;
 	/** Current app */
@@ -29,11 +31,13 @@ export class Request<TSession, TI18n extends I18nInterface> extends IncomingMess
 	i18n?: TI18n
 
 	/** Resolved Cookies Params */
-	cookies:	Map<string, any>= new Map();
-	/** Resolved Query Params */
-	query:		Map<string, any>= new Map();
+	cookies!:	RequestParams<string>;
 	/** Resolved Path Params  */
-	params:		Map<string, any>= new Map();
+	params!:	RequestParams<string>;
+	/** Path name */
+	pathname!:	string
+	/** Raw query */
+	rawQuery!:	string
 
 	/** Session */
 	session?: TSession
@@ -45,6 +49,23 @@ export class Request<TSession, TI18n extends I18nInterface> extends IncomingMess
 		super(socket);
 		this.now= Date.now();
 	}
+
+	/** Resolved Query Params */
+	private _query?: RequestParams<string>= undefined;
+	get query(): RequestParams<string>{
+		return this._query ??= new QueryMap(this, this.rawQuery);
+	}
+
+	//* Log
+	/** Log: Debug */
+	debug:	(tag: string, message: any)=> this	=	voidLog;
+	info:	(tag: string, message: any)=> this	=	voidLog;
+	warn:	(tag: string, message: any)=> this	=	voidLog;
+	error:	(tag: string, message: any)=> this	=	voidLog;
+	fatalError:	(tag: string, message: any)=> this= voidLog;
+	private _logLevel:	LogLevels= LogLevels.debug;
+	getLogLevel(){ return this._logLevel; }
+	setLogLevel: (level: LogLevels)=> this		= setLogLevel;
 
 	/** Get full URL */
 	get URL(){
@@ -233,4 +254,18 @@ export interface I18nInterface{
 	locale: string
 	// Other fields
 	[k: string]: any
+}
+
+/** Request params (params, query & cookie) */
+export interface RequestParams<T> {
+	/** Get RAW value of param */
+	get(key: string): T|undefined
+	/** Get parsed & resolved value or param */
+	resolve(key: string): Promise<any>
+	/** Iterate over the map */
+	forEach(callbackfn: (value: T, key: string, map: Map<string, T>) => void, thisArg?: any): void;
+	/** Check has entry */
+    has(key: string): boolean;
+	/** Size */
+	readonly size: number;
 }

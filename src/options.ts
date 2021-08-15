@@ -58,6 +58,10 @@ export interface BOptions extends RouterOptions{
 	
 	/** Cookie options */
 	cookieSecret: string
+	/** Cookie data max length (for security reasons) */
+	cookieMaxLength: number
+	/** URL query max length (for security reasons) */
+	queryMaxLength: number
 	// cookie?: {
 	// 	/** Cookie crypt salt */
 	// 	secret: string
@@ -209,6 +213,8 @@ export const DEFAULT_OPTIONS: Omit<ParsedOptions, 'baseURL'|'pretty'| 'trustProx
 	logLevel:	LogLevels.warn,
 	defaultLocale:	'en',
 	cookieSecret:	'gfw',
+	cookieMaxLength: 32768,
+	queryMaxLength:	32768,
 	views:			'views',
 	viewsDev:		undefined,
 	/** Views cache */
