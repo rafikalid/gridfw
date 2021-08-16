@@ -1,6 +1,6 @@
 import { RequestParams, Request } from "@src/http/request";
 import { PathResolverSuccess } from "gridfw-tree-router/dist/node";
-import { ParamInterface, paramType, RouterParams } from "gridfw-tree-router/dist/params";
+import { ParamInterface, paramType } from "gridfw-tree-router";
 //@ts-ignore
 import FastDecode from 'fast-decode-uri-component';
 

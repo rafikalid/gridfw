@@ -13,14 +13,11 @@ import {resolve} from 'path';
 import { renderForDev, RenderFx } from './utils/render';
 import {I18nInterface, Request} from './http/request';
 import {Response} from './http/response';
-import {GridfwRouter} from 'gridfw-tree-router';
+import {GridfwRouter, HTTPStatus, PathResolverResult, PathResolverSuccess } from 'gridfw-tree-router';
 import type { Controller } from './http/controller';
-import { HTTPStatus, PathResolverResult, PathResolverSuccess } from 'gridfw-tree-router/dist/node';
-import { paramType } from 'gridfw-tree-router/dist/params';
 //@ts-ignore
 import { CookieParams } from './utils/cookie';
 import { ParamMap } from './utils/path-params';
-import { QueryMap } from './utils/query-params';
 // import GridfwRouter from 'gridfw-tree-router';
 /**
  * Gridfw

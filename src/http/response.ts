@@ -1,6 +1,7 @@
 import CookieLib, { CookieSerializeOptions } from 'cookie';
 import {ServerResponse, IncomingMessage} from 'http';
-import {AES as AESCrypto} from 'crypto-js';
+import CryptoJS from 'crypto-js';
+const {AES: AESCrypto}= CryptoJS;
 import Send from 'send';
 import EncodeURL from 'encodeurl';
 import XMLConverter from 'xml-js';

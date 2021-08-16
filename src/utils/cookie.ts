@@ -1,9 +1,10 @@
 import { ErrorCodes, GError } from "@src/error";
 import { RequestParams, Request } from "@src/http/request";
-import {AES as AESCrypto} from 'crypto-js';
+import CryptoJS from 'crypto-js';
+const {AES: AESCrypto}= CryptoJS;
 //@ts-ignore
 import FastDecode from 'fast-decode-uri-component';
-import { paramType, RouterParams } from "gridfw-tree-router/dist/params";
+import { paramType, RouterParams } from "gridfw-tree-router";
 
 /** Cookie params */
 export class CookieParams extends Map<string, string> implements RequestParams<string>{

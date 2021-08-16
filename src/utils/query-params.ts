@@ -1,5 +1,5 @@
 import { RequestParams, Request } from "@src/http/request";
-import { ParamInterface, paramType, RouterParams } from "gridfw-tree-router/dist/params";
+import { paramType } from "gridfw-tree-router";
 //@ts-ignore
 import FastDecode from 'fast-decode-uri-component';
 import { ErrorCodes, GError } from "@src/error";

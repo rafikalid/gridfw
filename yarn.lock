@@ -1383,10 +1383,10 @@ graceful-fs@^4.0.0, graceful-fs@^4.1.11, graceful-fs@^4.1.2, graceful-fs@^4.1.6:
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.6.tgz#ff040b2b0853b23c3d31027523706f1885d76bee"
   integrity sha512-nTnJ528pbqxYanhpDYsi4Rd8MAeaBA67+RZ10CM1m3bTAVFEDcd5AuA4a6W5YkGZ1iNXHzZz8T6TBKLeBuNriQ==
 
-gridfw-tree-router@^1.0.5:
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/gridfw-tree-router/-/gridfw-tree-router-1.0.5.tgz#3b4284b286fed086725b22cc010a9298a993fb3d"
-  integrity sha512-uQJnmxQCYoANJfOnnmiHcFRhJvPY+avj/QAZ6aNw4O5rEIHfWL9NyoBDDIT07AxXUw6ou+bdC41hzIi67v9Wfw==
+gridfw-tree-router@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/gridfw-tree-router/-/gridfw-tree-router-1.0.7.tgz#1c47e6be46ce467f809c6f00da686ac041d17430"
+  integrity sha512-K1+krQ/k3n77a48rc9SjQOzUyYb3/PfZLaa2n/HgITkkPxl41n+4wNyAP+VVO0UNO/fzOUCW9RNTNtRdQdiycA==
   dependencies:
     lru-ttl-cache "^2.4.1"
 
