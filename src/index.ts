@@ -1,4 +1,4 @@
-import Http from 'http';
+import Http, {IncomingMessage, ServerResponse} from 'http';
 import Https from 'https';
 import Http2 from 'http2';
 import type {Socket} from 'net';
@@ -86,7 +86,9 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 				// HTTP 1.1
 				this.secure= false;
 				this.server= Http.createServer({
-
+					//@ts-ignore
+					IncomingMessage: this.Request,
+					ServerResponse: this.Response
 				});
 				break;
 			case Protocols.https:
@@ -95,6 +97,7 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 				let httpsOptions= (options as Https_Options).server;
 				if(httpsOptions==null || httpsOptions.cert==null)
 					throw new Error('Expected SSL/TLS certificat for HTTP2');
+				// TODO add response objects
 				this.server= Https.createServer(httpsOptions);
 				break;
 			case Protocols.http2:
@@ -224,9 +227,9 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 \t\t\tFramework version: ${Gridfw.version}
 
 \tREADY
-\t√ App name: ${options.name ?? '< Untitled >'}
-\t√ App Author: ${options.author ?? '< Unknown >'}
-\t√ Admin email: ${options.email ?? '<No email>'}
+\t${options.name ? '√ App Name: '+options.name : Chalk.keyword('orange')('[X] App Name not set')}
+\t${options.author ? '√ Author: '+options.author : Chalk.keyword('orange')('[X] Author not set')}
+\t${options.email ? '√ Admin Email: '+options.email : Chalk.keyword('orange')('[X] Admin Email not set')}
 \t${options.isProd? Chalk.green('√ Production Mode') : Chalk.keyword('orange')("[X] Development Mode.\n\t[!] Enable prodution mode to boost performance")}
 \t${Chalk.green(`█ Server listening At: ${this.baseURL.href}`)}
 ╘═════════════════════════════════════════════════════════════════════════════╛`));
@@ -301,7 +304,8 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 				req._uploading.then((r)=> r.clear());
 			// Send returned data & end request
 			if(resp.writableEnded===false){
-				await resp.send(controllerResponse);
+				if(controllerResponse == null) await resp.end();
+				else await resp.send(controllerResponse);
 			}
 		}
 	}

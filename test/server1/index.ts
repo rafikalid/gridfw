@@ -9,4 +9,4 @@ const app= new Gridfw<TSession, I18nMap>({
 
 // app.listen();
 app.listen()
-console.log('--- listening on port : 3000');
+console.log('--- listening on port : ', app.port);
