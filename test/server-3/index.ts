@@ -6,4 +6,4 @@ export type Resp= Response<any, any>;
 
 /** App */
 const app= new Gridfw();
-app.loadRoutesFrom('routes/**/*.ts');
+app.scan('routes/**/*.ts');

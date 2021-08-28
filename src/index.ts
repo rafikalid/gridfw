@@ -310,8 +310,8 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 		}
 	}
 	/** Load routes using class representation */
-	loadRoutesFrom(path: string){
-		throw new Error("You did'nt use Gridfw compiler!");
+	scan(path: string){
+		throw new Error("Please use Gridfw-compiler to compile your project!");
 	}
 }
 

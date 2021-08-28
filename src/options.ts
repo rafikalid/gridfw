@@ -228,8 +228,14 @@ export const DEFAULT_OPTIONS: Omit<ParsedOptions, 'baseURL'|'pretty'| 'trustProx
 	etag:		Etag,
 	jsonpParam: 'cb',
 	errors: {
-		else: function(err: Error|GError){
-			console.log('----- ERROR: ', err)
+		404(err, req, resp){
+			resp.statusCode= 404;
+			resp.send('Page not found!');
+		},
+		else(err: Error|GError, req, resp){
+			req.fatalError('CORE', err);
+			resp.statusCode= 500;
+			resp.send('Internal Error!');
 		}
 	},
 	/** Upload options */
@@ -295,6 +301,10 @@ export function initOptions(options: Partial<Options>): ParsedOptions{
 		if(opts.upload.limits!==DEFAULT_OPTIONS.upload.limits){
 			opts.upload.limits= UploadLimits({...DEFAULT_OPTIONS.upload.limits, ...opts.upload.limits});
 		}
+	}
+	//* Errors
+	if(opts.errors!= DEFAULT_OPTIONS.errors){
+		opts.errors= {...DEFAULT_OPTIONS.errors, ...opts.errors};
 	}
 	return opts as ParsedOptions;
 }

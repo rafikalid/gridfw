@@ -49,6 +49,7 @@
     "@types/proxy-addr": "^2.0.0",
     "@types/range-parser": "^1.2.4",
     "@types/send": "^0.17.1",
+    "gridfw-compiler": "^2.0.0",
     "gulp": "^4.0.2",
     "gulp-sourcemaps": "^3.0.0",
     "gulp-typescript": "^6.0.0-alpha.1",
