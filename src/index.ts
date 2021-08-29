@@ -309,8 +309,14 @@ export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<
 			}
 		}
 	}
+	/** Link events to websocket */
+	ws(eventName: string|string[], cb: ()=> void): this{
+		//TODO
+		throw new Error('unimplemented!');
+		return this;
+	}
 	/** Load routes using class representation */
-	scan(path: string){
+	scan(...path: (string|string[])[]): void{
 		throw new Error("Please use Gridfw-compiler to compile your project!");
 	}
 }
