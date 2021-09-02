@@ -11,18 +11,19 @@ import Chalk from 'chalk';
 import LRU_TTL_CACHE from 'lru-ttl-cache';
 import {resolve} from 'path';
 import { renderForDev, RenderFx } from './utils/render';
-import {I18nInterface, Request} from './http/request';
+import { Request } from './http/request';
 import {Response} from './http/response';
 import {GridfwRouter, HTTPStatus, PathResolverResult, PathResolverSuccess } from 'gridfw-tree-router';
 import type { Controller } from './http/controller';
 //@ts-ignore
 import { CookieParams } from './utils/cookie';
 import { ParamMap } from './utils/path-params';
+import { I18N } from './helpers/i18n';
 // import GridfwRouter from 'gridfw-tree-router';
 /**
  * Gridfw
  */
-export class Gridfw<TSession, TI18n extends I18nInterface> extends GridfwRouter<Controller<TSession, TI18n>> implements LogInterface{
+export class Gridfw<TSession=any, TI18n extends I18N=any> extends GridfwRouter<Controller<TSession, TI18n>> implements LogInterface{
 	/** Request class */
 	Request:	new (socket: Socket)=> Request<TSession, TI18n>;
 	/** Response */
@@ -326,3 +327,4 @@ export * from './error';
 export * from './schema/decorators';
 export * from './http/request';
 export * from './http/response';
+export * from './helpers/i18n';

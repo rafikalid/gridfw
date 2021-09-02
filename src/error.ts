@@ -34,7 +34,9 @@ export enum ErrorCodes{
 	/** Cookie max size exceeded */
 	COOKIE_MAX_LENGTH,
 	/** URL Query max size exceeded */
-	QUERY_MAX_LENGTH
+	QUERY_MAX_LENGTH,
+	/** Forgot to run compile */
+	NEEDS_COMPILE
 }
 
 /** ERROR */

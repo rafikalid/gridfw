@@ -12,13 +12,14 @@ import OnFinishedLib from 'on-finished';
 import ParseMilliseconds from 'ms';
 import {lookup as mimeTypeLookup} from 'mime-types';
 import { Gridfw } from '..';
-import { ContentTypes, I18nInterface, Request } from './request';
+import { ContentTypes, Request } from './request';
 import { ErrorCodes, GError } from '@src/error';
+import { I18N } from '@src/helpers/i18n';
 
 /**
  * HTTP1.1 server response
  */
-export class Response<TSession, TI18n extends I18nInterface> extends ServerResponse{
+export class Response<TSession, TI18n extends I18N> extends ServerResponse{
 	/** Current app */
 	readonly app!: Gridfw<TSession, TI18n>;
 	readonly req: Request<TSession, TI18n>;
@@ -305,7 +306,7 @@ export class Response<TSession, TI18n extends I18nInterface> extends ServerRespo
 	
 }
 
-export interface ResponseData<TSession, TI18n extends I18nInterface>{
+export interface ResponseData<TSession, TI18n extends I18N>{
 	app:	Gridfw<TSession, TI18n>,
 	i18n?:	TI18n
 	req:	Request<TSession, TI18n>

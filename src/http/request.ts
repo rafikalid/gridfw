@@ -6,15 +6,16 @@ import {parse as ContentTypeParse, ParsedMediaType} from 'content-type';
 import RangeParser from 'range-parser';
 import { Gridfw } from '..';
 import { getBody, upload, UploadResult } from '../utils/uploader';
-import { Options, UploadLimits, uploadOptions } from '@src/options';
+import { uploadOptions } from '@src/options';
 import { ErrorCodes, GError } from '@src/error';
 import { LogLevels, setLogLevel, voidLog } from '@src/utils/log';
 import { QueryMap } from '@src/utils/query-params';
+import { I18N } from '@src/helpers/i18n';
 
 /**
  * HTTP1.1 request
  */
-export class Request<TSession, TI18n extends I18nInterface> extends IncomingMessage{
+export class Request<TSession, TI18n extends I18N> extends IncomingMessage{
 	readonly app!: Gridfw<TSession, TI18n>;
 	/** Uploading promsie */
 	_uploading?: Promise<UploadResult>= undefined;
@@ -246,14 +247,6 @@ export enum ContentTypes{
 	webp=			'image/webp',
 	multipart=		'multipart/form-data',
 	formUrlEncoded=	'application/x-www-form-urlencoded'
-}
-
-/** I18N format */
-export interface I18nInterface{
-	/** Current locale code */
-	locale: string
-	// Other fields
-	[k: string]: any
 }
 
 /** Request params (params, query & cookie) */
