@@ -129,7 +129,6 @@ export class Gridfw<TSession=any, TI18n extends I18N=any> extends GridfwRouter<C
 		this.setLogLevel(options.logLevel ?? (options.isProd? LogLevels.warn : LogLevels.debug));
 		//* I18N
 		this._defaultLocale= options.defaultLocale?.toLowerCase() ?? 'en';
-		this.reloadLoadI18n();
 		//* Views
 		this._viewCache= new LRU_TTL_CACHE(options.viewsCache);
 		//* Views in dev mode
@@ -153,26 +152,32 @@ export class Gridfw<TSession=any, TI18n extends I18N=any> extends GridfwRouter<C
 	/** Supported locales */
 	private _defaultLocale: string
 	readonly locales: Set<string>= new Set()
+	readonly localesMap: Map<string, TI18n>= new Map();
 	get defaultLocale(){ return this._defaultLocale; }
 	set defaultLocale(locale: string){
 		locale= locale.toLowerCase();
 		if(this.locales.has(locale)) this._defaultLocale= locale;
 		else throw new GError(ErrorCodes.UNKNOWN_LOCALE, `Unknown locale: ${locale}`, locale);
 	}
-
-	/**
-	 * Reload i18n list
-	 * ! Use Sync load
+	/** 
+	 * Init i18n files
+	 * @internal
 	 */
-	reloadLoadI18n(){
-		//TODO
+	_initI18n(...args: TI18n[]){
+		for(let i=0, len= args.length; i<len; ++i){
+			let locale= args[i];
+			let lname= locale.name;
+			if(typeof lname!=='string') throw new GError(ErrorCodes.WRONG_LOCALE, `Expected locale name`);
+			if(this.locales.has(lname)) throw new GError(ErrorCodes.DUPLICATED_LOCALE, `Duplicated locale: ${lname}`);
+			this.locales.add(lname);
+			this.localesMap.set(lname, locale);
+		}
 		return this;
 	}
 
 	/** Get locale entries */
-	async getLocale(locale: string): Promise<TI18n>{
-		//TODO
-		throw new Error('Unimplemented!');
+	getLocale(locale: string): TI18n|undefined{
+		return this.localesMap.get(locale);
 	}
 
 	/**
@@ -317,9 +322,10 @@ export class Gridfw<TSession=any, TI18n extends I18N=any> extends GridfwRouter<C
 		return this;
 	}
 	/** Load routes using class representation */
-	scan(...path: (string|string[])[]): void{
+	scan(path: string): void{
 		throw new Error("Please use Gridfw-compiler to compile your project!");
 	}
+
 }
 
 

@@ -36,7 +36,11 @@ export enum ErrorCodes{
 	/** URL Query max size exceeded */
 	QUERY_MAX_LENGTH,
 	/** Forgot to run compile */
-	NEEDS_COMPILE
+	NEEDS_COMPILE,
+	/** Wrong locale for ::initI18n */
+	WRONG_LOCALE,
+	/** Duplicated locale for ::initI18n */
+	DUPLICATED_LOCALE
 }
 
 /** ERROR */
