@@ -2,7 +2,9 @@ import { ErrorCodes, GError } from "@src/error";
 
 /** Compile pug expressions for i18n */
 export function i18nPug(exp: string|TemplateStringsArray){
-	throw new GError(ErrorCodes.NEEDS_COMPILE, "You forgot to compile i18n!");
+	return function(locals: Record<string, any>){
+		throw new GError(ErrorCodes.NEEDS_COMPILE, "You forgot to compile i18n!");
+	}
 }
 
 /** Main i18n interface */
