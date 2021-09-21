@@ -325,12 +325,11 @@ export class Gridfw<TSession=any, TI18n extends I18N=any> extends GridfwRouter<C
 	scan(path: string): void{
 		throw new Error("Please use Gridfw-compiler to compile your project!");
 	}
-
 }
-
 
 export * from './error';
 export * from './schema/decorators';
 export * from './http/request';
 export * from './http/response';
 export * from './helpers/i18n';
+export * from './helpers/types';
