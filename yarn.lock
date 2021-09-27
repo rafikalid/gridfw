@@ -1388,12 +1388,12 @@ gridfw-compiler@^2.0.0:
   dependencies:
     typescript "^4.3.5"
 
-gridfw-tree-router@^1.0.7:
-  version "1.0.7"
-  resolved "https://registry.yarnpkg.com/gridfw-tree-router/-/gridfw-tree-router-1.0.7.tgz#1c47e6be46ce467f809c6f00da686ac041d17430"
-  integrity sha512-K1+krQ/k3n77a48rc9SjQOzUyYb3/PfZLaa2n/HgITkkPxl41n+4wNyAP+VVO0UNO/fzOUCW9RNTNtRdQdiycA==
+gridfw-tree-router@^1.0.8:
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/gridfw-tree-router/-/gridfw-tree-router-1.0.8.tgz#0c29ca4dc366654b746145734efcb435c6b1e6ec"
+  integrity sha512-EBlETm5zFCXHCUgIsF0JzMdpSYabuTXK2IoSturxGxIpvkqvG2VmEJHMjdGgOYSjFKt9bXbUXT46fDULplKo9A==
   dependencies:
-    lru-ttl-cache "^2.4.1"
+    lru-ttl-cache "^2.4.2"
 
 growl@1.10.5:
   version "1.10.5"
@@ -1966,14 +1966,6 @@ lru-queue@^0.1.0:
   integrity sha1-Jzi9nw089PhEkMVzbEhpmsYyzaM=
   dependencies:
     es5-ext "~0.10.2"
-
-lru-ttl-cache@^2.4.1:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/lru-ttl-cache/-/lru-ttl-cache-2.4.1.tgz#4c12094acd416afd3e663208b15339427919e965"
-  integrity sha512-UKS5HPSr9BFjtmsYqJOftB2yHULW/R89bbqz2jE93OA0gj+iLhoCtqcU5FtEySJ6ufCVdFyMgrTDb8+v24knRw==
-  dependencies:
-    bytes "^3.1.0"
-    ms "^2.1.3"
 
 lru-ttl-cache@^2.4.2:
   version "2.4.2"
@@ -3172,10 +3164,10 @@ typedarray@^0.0.6:
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
 
-typescript-path-fix@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/typescript-path-fix/-/typescript-path-fix-1.0.3.tgz#4dc1707ad187657f2e0fb6b2fb93c831f89e2c77"
-  integrity sha512-FgBnuajTu1cgxrypmYUKbbqmUZfGXBcb4cUkFI6Qw/XlePeAQ1pYrv7MQZS3sBcI4SMiwkbZ9hlYihcsD6vZGw==
+typescript-path-fix@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/typescript-path-fix/-/typescript-path-fix-1.0.5.tgz#db9dcf453077bde7a4b4c6a2d965848e3d2a75b4"
+  integrity sha512-vhPq6OJLQTvTIHpOosRJPT9b6WQ5dxzv7AS2ZXSGJlC5cVy9d8qp34w1FOxqir18kDCJhciVDgOleYiAbjz+ZQ==
 
 typescript@^4.3.5:
   version "4.3.5"
