@@ -18,7 +18,8 @@ const TsProject = GulpTypescript.createProject('tsconfig.json', {
 	removeComments: isProd,
 	pretty: !isProd,
 	target: 'ESNext',
-	module: 'ESNext'
+	module: 'ESNext',
+	moduleResolution: 'node'
 });
 const TsProjectCommonjs = GulpTypescript.createProject('tsconfig.json', {
 	removeComments: isProd,
@@ -34,9 +35,9 @@ export function compileEsNext() {
 		since: lastRun(compileEsNext)
 	})
 		.pipe(SrcMap.init())
-		.pipe(tsPathFix.gulp())
 		.pipe(TsProject())
 		.pipe(GulpRename({ extname: '.mjs' }))
+		.pipe(tsPathFix.gulp('.mjs'))
 		.pipe(SrcMap.write('.'))
 		.pipe(dest('dist/module'));
 }

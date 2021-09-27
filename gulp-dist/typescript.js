@@ -20,7 +20,8 @@ const TsProject = gulp_typescript_1.default.createProject('tsconfig.json', {
     removeComments: isProd,
     pretty: !isProd,
     target: 'ESNext',
-    module: 'ESNext'
+    module: 'ESNext',
+    moduleResolution: 'node'
 });
 const TsProjectCommonjs = gulp_typescript_1.default.createProject('tsconfig.json', {
     removeComments: isProd,
@@ -35,9 +36,9 @@ function compileEsNext() {
         since: lastRun(compileEsNext)
     })
         .pipe(gulp_sourcemaps_1.default.init())
-        .pipe(tsPathFix.gulp())
         .pipe(TsProject())
-        .pipe(gulp_rename_1.default({ extname: '.mjs' }))
+        .pipe((0, gulp_rename_1.default)({ extname: '.mjs' }))
+        .pipe(tsPathFix.gulp('.mjs'))
         .pipe(gulp_sourcemaps_1.default.write('.'))
         .pipe(dest('dist/module'));
 }
