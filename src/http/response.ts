@@ -77,11 +77,12 @@ export class Response<TSession, TI18n extends I18N> extends ServerResponse {
 			options.path ??= '/';
 			// Sign cookie
 			if (options.signed === true) {
-				let options = this.app.options;
+				let appOpts = this.app.options;
 				value = sign(
 					value,
-					options.cookieSecret,
-					options.cookieHashAlgo
+					appOpts.cookieSecret,
+					-1,
+					appOpts.cookieHashAlgo
 				).toString('base64url');
 			}
 		}

@@ -49,7 +49,7 @@ export class CookieParams extends Map<string, string> implements CookieMap {
 				Buffer.from(v, 'base64url'),
 				this.#secret,
 				this.#hashAlgo
-			).toString('utf-8');
+			).data.toString('utf-8');
 		}
 		return v;
 	}

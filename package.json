@@ -86,7 +86,7 @@
 		"range-parser": "^1.2.1",
 		"raw-body": "^2.4.1",
 		"send": "^0.17.1",
-		"web-token": "^1.1.1",
+		"web-token": "^1.1.2",
 		"xml-js": "^1.6.11"
 	}
 }

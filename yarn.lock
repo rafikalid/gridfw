@@ -3324,10 +3324,10 @@ vinyl@^2.0.0, vinyl@^2.2.0:
     remove-trailing-separator "^1.0.1"
     replace-ext "^1.0.0"
 
-web-token@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/web-token/-/web-token-1.1.1.tgz#4c81b1cd5a94bd7b1f38c8d6a91e7dce2dacb984"
-  integrity sha512-4mvWIvvkHBeMUagplu2Qd50T257GwyWMM7tXt1Fs4TJXGVn2eVsGl8SehDG6JRo8rgiPQonTYUVljcqZJWcUmw==
+web-token@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/web-token/-/web-token-1.1.2.tgz#0c154ec90fa7d1fbca937ad2228f6bc7c1124a0d"
+  integrity sha512-duMccgM418HcpY7CAP+MJ86v06YKlTbdr1x5tx/SU5haztfFt42yYXVCV4CsjujF8/VBiJQGghAZHfzcs5ZrMw==
 
 which-module@^1.0.0:
   version "1.0.0"
