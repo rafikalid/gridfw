@@ -14,6 +14,7 @@ import { ContentTypes, Request } from './request';
 import { ErrorCodes, GError } from '@src/error';
 import { I18N } from '@src/helpers/i18n';
 import { sign } from 'web-token';
+import { sanitizePath } from '@src/utils/sanitize';
 
 /**
  * HTTP1.1 server response
@@ -178,9 +179,8 @@ export class Response<TSession, TI18n extends I18N> extends ServerResponse {
 		data = options.pretty
 			? JSON.stringify(data, null, '\t')
 			: JSON.stringify(data);
-		data = `${
-			callbackName ?? this.req.query.get(options.jsonpParam) ?? 'cb'
-		}(${data})`;
+		data = `${callbackName ?? this.req.query.get(options.jsonpParam) ?? 'cb'
+			}(${data})`;
 		// Send
 		return this.send(data, ContentTypes.js);
 	}
@@ -203,6 +203,8 @@ export class Response<TSession, TI18n extends I18N> extends ServerResponse {
 	sendFile(filePath: string | Buffer, options: SendFileOptions) {
 		if (typeof filePath === 'string')
 			return new Promise((res, rej) => {
+				// Sanitize file path
+				filePath = sanitizePath(filePath as string);
 				// File name
 				const fileName = options.name ?? basename(filePath);
 				// Content disposition
@@ -292,7 +294,7 @@ export class Response<TSession, TI18n extends I18N> extends ServerResponse {
 			return this.send(filePath);
 		}
 	}
-	/** Send file as attachement */
+	/** Send file as attachment */
 	download(filePath: string | Buffer, options: SendFileOptions) {
 		if (options == null) options = { inline: false };
 		else options.inline ??= false;
@@ -319,9 +321,8 @@ export class Response<TSession, TI18n extends I18N> extends ServerResponse {
 						data = options.pretty
 							? JSON.stringify(data, null, '\t')
 							: JSON.stringify(data);
-						data = `${
-							req.query.get(options.jsonpParam) ?? 'cb'
-						}(${data})`;
+						data = `${req.query.get(options.jsonpParam) ?? 'cb'
+							}(${data})`;
 						break;
 					case ContentTypes.xml:
 						data = XMLConverter.js2xml(data, {
@@ -401,6 +402,6 @@ export interface SendFileOptions extends Send.SendOptions {
 	 * File name
 	 */
 	name?: string;
-	/** If send file as INLINE or ATTACHEMENT @default true */
+	/** If send file as INLINE or ATTACHMENT @default true */
 	inline?: boolean;
 }

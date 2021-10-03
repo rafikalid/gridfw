@@ -1,13 +1,12 @@
 import { ErrorCodes, GError } from '@src/error';
 import { Writable as WritableStream, Readable } from 'stream';
 import {
-	Options,
 	ParsedOptions,
 	UploadLimits,
 	UploadLimitsParsed,
-	uploadOptions,
-	uploadOptionsParsed
+	uploadOptions
 } from '@src/options';
+import { sanitizePath } from './sanitize';
 import { Request } from '../http/request';
 import Bytes from 'bytes';
 import { lookup as mimeTypeLookup } from 'mime-types';
@@ -33,7 +32,7 @@ export interface FileUploadOptions extends uploadOptions {
 	progress?: (
 		this: Request<any, any>,
 		chunkLen: number,
-		uplaoded: number,
+		uploaded: number,
 		total: number
 	) => void;
 	/**
@@ -353,7 +352,7 @@ function createFileUploadWrapper(
 					req.now
 				);
 				tempPaths.push(filePath);
-				fileStream = createWriteStream(filePath);
+				fileStream = createWriteStream(sanitizePath(filePath));
 			} else if (typeof result === 'string') {
 				//* Set custom file path
 				switch (result.charAt(0)) {
@@ -374,7 +373,7 @@ function createFileUploadWrapper(
 							`onFile>> Enexpected return value: ${result}`
 						);
 				}
-				fileStream = createWriteStream(result);
+				fileStream = createWriteStream(sanitizePath(result));
 			} else if (result instanceof WritableStream) {
 				fileStream = result;
 			} else if (typeof result === 'object') {
@@ -384,7 +383,7 @@ function createFileUploadWrapper(
 			} else {
 				throw new GError(
 					ErrorCodes.UPLOAD_ERROR,
-					`onFile>> Enexpected result`,
+					`onFile>> Unexpected result`,
 					result
 				);
 			}
@@ -537,3 +536,4 @@ function _addField(data: Map<string, any>, fieldname: string, val: any) {
 	else if (Array.isArray(val)) vl.push(val);
 	else data.set(fieldname, val);
 }
+

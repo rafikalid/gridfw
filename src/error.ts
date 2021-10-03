@@ -1,4 +1,4 @@
-export enum ErrorCodes{
+export enum ErrorCodes {
 	/** App options error */
 	OPTIONS,
 	/** Internal error */
@@ -40,27 +40,29 @@ export enum ErrorCodes{
 	/** Wrong locale for ::initI18n */
 	WRONG_LOCALE,
 	/** Duplicated locale for ::initI18n */
-	DUPLICATED_LOCALE
+	DUPLICATED_LOCALE,
+	/** Path traversal attack */
+	PATH_TRAVERSAL_ATTACK
 }
 
 /** ERROR */
-export class GError extends Error{
+export class GError extends Error {
 	readonly code: ErrorCodes
 	readonly causedBy: any
-	constructor(code: ErrorCodes, message?: string, causedBy?: any){
+	constructor(code: ErrorCodes, message?: string, causedBy?: any) {
 		super(message ?? String(code));
-		this.code= code;
-		this.causedBy= causedBy;
+		this.code = code;
+		this.causedBy = causedBy;
 	}
-	
-	toString(){ return this.stack; }
 
-	get stack(){
-		var causedBy= this.causedBy;
-		if(causedBy instanceof Error)
-			causedBy= "\n"+causedBy.stack;
-		else if(causedBy!=null)
-			causedBy= "\n"+causedBy;
+	toString() { return this.stack; }
+
+	get stack() {
+		var causedBy = this.causedBy;
+		if (causedBy instanceof Error)
+			causedBy = "\n" + causedBy.stack;
+		else if (causedBy != null)
+			causedBy = "\n" + causedBy;
 		return `ERROR-CODE: ${ErrorCodes[this.code]}\n${super.stack}${causedBy}`;
 	}
 }
