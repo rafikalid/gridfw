@@ -18,6 +18,7 @@ import Busboy from 'busboy';
 // import {encodingExists} from 'iconv-lite';
 import RawBody from 'raw-body';
 import { xml2js } from 'xml-js';
+import { randomBytes } from 'crypto';
 
 const { open: fOpen, unlink: fUnlink } = fPromises;
 
@@ -41,6 +42,8 @@ export interface FileUploadOptions extends uploadOptions {
 	contentType?: string | string[];
 	/** Parse JSON and XML data */
 	parse?: boolean;
+	/** Root dir: prevent Path Traversal attack */
+	root?: string
 }
 
 /**
@@ -351,8 +354,9 @@ function createFileUploadWrapper(
 					result,
 					req.now
 				);
+				filePath = sanitizePath(filePath, options.tempDir);
 				tempPaths.push(filePath);
-				fileStream = createWriteStream(sanitizePath(filePath));
+				fileStream = createWriteStream(filePath);
 			} else if (typeof result === 'string') {
 				//* Set custom file path
 				switch (result.charAt(0)) {
@@ -370,10 +374,11 @@ function createFileUploadWrapper(
 					default:
 						throw new GError(
 							ErrorCodes.UPLOAD_ERROR,
-							`onFile>> Enexpected return value: ${result}`
+							`onFile>> Unexpected return value: ${result}`
 						);
 				}
-				fileStream = createWriteStream(sanitizePath(result));
+				result = sanitizePath(result, options.root)
+				fileStream = createWriteStream(result);
 			} else if (result instanceof WritableStream) {
 				fileStream = result;
 			} else if (typeof result === 'object') {
@@ -413,17 +418,17 @@ async function _createTempFile(
 	extName: string = '.tmp',
 	now: number
 ): Promise<string> {
-	var tmpFileName = `${process.pid.toString(32)}-${now.toString(32)}`;
+	var tmpFileName = `${process.pid.toString(32)}-${now.toString(32)}${randomBytes(12).toString('base64url')}`;
 	var path: string;
 	var i = 0;
 	while (true) {
 		try {
-			path = join(dirName, `${tmpFileName}-${i.toString(32)}${extName}`);
+			path = join(dirName, `${tmpFileName}-${(i++).toString(32)}${extName}`);
 			let fd = await fOpen(path, 'wx+', 0o600);
 			await fd.close();
 			break;
 		} catch (err: any) {
-			if (err?.code !== 'EEXIST')
+			if (err?.code !== 'EEXIST' || i > 100)
 				throw new GError(
 					ErrorCodes.UPLOAD_ERROR,
 					`Create temp file failed!`,
