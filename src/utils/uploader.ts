@@ -210,25 +210,25 @@ function uploadFormData(
 		.on(
 			'field',
 			function (
-				fieldname,
+				fieldName,
 				val,
-				fieldnameTruncated,
+				fieldNameTruncated,
 				valTruncated,
 				encoding,
 				mimetype
 			) {
 				try {
-					if (fieldnameTruncated)
+					if (fieldNameTruncated)
 						throw new GError(
 							ErrorCodes.UPLOAD_ERROR,
-							`Field name truncated: ${fieldname}`
+							`Field name truncated: ${fieldName}`
 						);
 					else if (valTruncated)
 						throw new GError(
 							ErrorCodes.UPLOAD_ERROR,
-							`field value truncated: ${fieldname}`
+							`field value truncated: ${fieldName}`
 						);
-					else _addField(data, fieldname, val);
+					else _addField(data, fieldName, val);
 				} catch (err) {
 					errorHandler(err);
 				}
@@ -236,12 +236,12 @@ function uploadFormData(
 		)
 		.on(
 			'file',
-			async function (fieldname, file, filename, encoding, mimetype) {
+			async function (fieldName, file, filename, encoding, mimetype) {
 				try {
 					var r = await onFile(
 						filename,
 						file,
-						fieldname,
+						fieldName,
 						encoding as BufferEncoding,
 						mimetype
 					);
@@ -330,7 +330,7 @@ function createFileUploadWrapper(
 	return async function (
 		filename: string,
 		file: NodeJS.ReadableStream | Readable,
-		fieldname: string | undefined,
+		fieldName: string | undefined,
 		encoding: BufferEncoding | undefined,
 		mimetype: string | undefined
 	) {
@@ -340,7 +340,7 @@ function createFileUploadWrapper(
 				req,
 				filename,
 				file,
-				fieldname,
+				fieldName,
 				encoding,
 				mimetype,
 				options
@@ -535,10 +535,10 @@ function uploadJsonXml(
 		uploadRawData(req, options, limits, resolve, reject);
 	}
 }
-function _addField(data: Map<string, any>, fieldname: string, val: any) {
-	var vl = data.get(fieldname);
-	if (vl == null) data.set(fieldname, val);
+function _addField(data: Map<string, any>, fieldName: string, val: any) {
+	var vl = data.get(fieldName);
+	if (vl == null) data.set(fieldName, val);
 	else if (Array.isArray(val)) vl.push(val);
-	else data.set(fieldname, val);
+	else data.set(fieldName, val);
 }
 

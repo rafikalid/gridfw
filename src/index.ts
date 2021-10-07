@@ -36,8 +36,7 @@ import { I18N } from './helpers/i18n';
  */
 export class Gridfw<TSession = any, TI18n extends I18N = any>
 	extends GridfwRouter<Controller<TSession, TI18n>>
-	implements LogInterface
-{
+	implements LogInterface {
 	/** Request class */
 	Request: new (socket: Socket) => Request<TSession, TI18n>;
 	/** Response */
@@ -97,46 +96,46 @@ export class Gridfw<TSession = any, TI18n extends I18N = any>
 		//* Options
 		//* create server
 		switch (options.protocol!) {
-		case Protocols.http:
-			// HTTP 1.1
-			this.secure = false;
-			this.server = Http.createServer({
-				//@ts-ignore
-				IncomingMessage: this.Request,
-				ServerResponse: this.Response
-			});
-			break;
-		case Protocols.https:
-			// HTTPs 1.1
-			this.secure = true;
-			const httpsOptions = (options as Https_Options).server;
-			if (httpsOptions == null || httpsOptions.cert == null)
-				throw new Error('Expected SSL/TLS certificat for HTTP2');
+			case Protocols.http:
+				// HTTP 1.1
+				this.secure = false;
+				this.server = Http.createServer({
+					//@ts-ignore
+					IncomingMessage: this.Request,
+					ServerResponse: this.Response
+				});
+				break;
+			case Protocols.https:
+				// HTTPs 1.1
+				this.secure = true;
+				const httpsOptions = (options as Https_Options).server;
+				if (httpsOptions == null || httpsOptions.cert == null)
+					throw new Error('Expected SSL/TLS certificate for HTTP2');
 				// TODO add response objects
-			this.server = Https.createServer(httpsOptions);
-			break;
-		case Protocols.http2:
-			// HTTP 2
-			this.secure = true;
-			const http2Options = (options as Https_Options).server;
-			if (http2Options?.cert == null)
-				throw new Error('Expected SSL/TLS certificat for HTTP2');
-			this.server = Http2.createSecureServer(http2Options);
-			// Listener
-			// this.server.on('stream', function (stream, headers, flags) {
-			// 	TODO improuve HTTP2
-			// 	console.log('--- received http2 request');
-			// 	stream.respond({
-			// 		'content-type': 'text/html; charset=utf-8',
-			// 		':status': 500
-			// 	});
-			// 	stream.end('<b>Handler unimplemented!</b>');
-			// });
-			break;
-		default:
-			throw new Error(
-				`Enexpected protocol: ${this.protocol}, valid values are: Protocols.http, Protocols.https and Protocols.http2`
-			);
+				this.server = Https.createServer(httpsOptions);
+				break;
+			case Protocols.http2:
+				// HTTP 2
+				this.secure = true;
+				const http2Options = (options as Https_Options).server;
+				if (http2Options?.cert == null)
+					throw new Error('Expected SSL/TLS certificate for HTTP2');
+				this.server = Http2.createSecureServer(http2Options);
+				// Listener
+				// this.server.on('stream', function (stream, headers, flags) {
+				// 	TODO improve HTTP2
+				// 	console.log('--- received http2 request');
+				// 	stream.respond({
+				// 		'content-type': 'text/html; charset=utf-8',
+				// 		':status': 500
+				// 	});
+				// 	stream.end('<b>Handler unimplemented!</b>');
+				// });
+				break;
+			default:
+				throw new Error(
+					`Unexpected protocol: ${this.protocol}, valid values are: Protocols.http, Protocols.https and Protocols.http2`
+				);
 		}
 		//* Listener
 		this.handle = this.handle.bind(this); // enable to use this method by external services
@@ -144,7 +143,7 @@ export class Gridfw<TSession = any, TI18n extends I18N = any>
 		//* Log
 		this.setLogLevel(
 			options.logLevel ??
-				(options.isProd ? LogLevels.warn : LogLevels.debug)
+			(options.isProd ? LogLevels.warn : LogLevels.debug)
 		);
 		//* I18N
 		this._defaultLocale = options.defaultLocale?.toLowerCase() ?? 'en';
@@ -220,26 +219,29 @@ export class Gridfw<TSession = any, TI18n extends I18N = any>
 	 * Start listening
 	 */
 	listen() {
-		const server = this.server;
-		server.listen(this.options.listen);
+		return new Promise((resolve, reject) => {
+			const server = this.server;
+			server.listen(this.options.listen, () => {
+				//* Data
+				const a = server.address() as Net.AddressInfo;
+				this.port = a.port;
+				this.ip = a.address;
+				this.ipType = a.family;
+				//* Base url
+				if (this._baseURLAuto) {
+					this.baseURL = new URL(
+						`${this.secure ? 'https' : 'http'}://localhost:${this.port}`
+					);
+				}
+				//* Print status
+				this.printStatus();
+				resolve(this);
+			});
+		});
 		// server.on('error', function(err: any){
 		// 	console.log('error>> ', err);
 		// });
 		// console.log('--- listen: ', this.secure);
-		//* Data
-		const a = server.address() as Net.AddressInfo;
-		this.port = a.port;
-		this.ip = a.address;
-		this.ipType = a.family;
-		//* Base url
-		if (this._baseURLAuto) {
-			this.baseURL = new URL(
-				`${this.secure ? 'https' : 'http'}://localhost:${this.port}`
-			);
-		}
-		//* Print status
-		this.printStatus();
-		return this;
 	}
 	/** Server listening */
 	get listening() {
@@ -272,28 +274,24 @@ export class Gridfw<TSession = any, TI18n extends I18N = any>
 \t\t\tFramework version: ${Gridfw.version}
 
 \tREADY
-\t${
-	options.name
-		? '√ App Name: ' + options.name
-		: Chalk.keyword('orange')('[X] App Name not set')
-}
-\t${
-	options.author
-		? '√ Author: ' + options.author
-		: Chalk.keyword('orange')('[X] Author not set')
-}
-\t${
-	options.email
-		? '√ Admin Email: ' + options.email
-		: Chalk.keyword('orange')('[X] Admin Email not set')
-}
-\t${
-	options.isProd
-		? Chalk.green('√ Production Mode')
-		: Chalk.keyword('orange')(
-			'[X] Development Mode.\n\t[!] Enable prodution mode to boost performance'
-					  )
-}
+\t${options.name
+					? '√ App Name: ' + options.name
+					: Chalk.keyword('orange')('[X] App Name not set')
+				}
+\t${options.author
+					? '√ Author: ' + options.author
+					: Chalk.keyword('orange')('[X] Author not set')
+				}
+\t${options.email
+					? '√ Admin Email: ' + options.email
+					: Chalk.keyword('orange')('[X] Admin Email not set')
+				}
+\t${options.isProd
+					? Chalk.green('√ Production Mode')
+					: Chalk.keyword('orange')(
+						'[X] Development Mode.\n\t[!] Enable prodution mode to boost performance'
+					)
+				}
 \t${Chalk.green(`█ Server listening At: ${this.baseURL.href}`)}
 ╘═════════════════════════════════════════════════════════════════════════════╛`)
 		);
@@ -346,7 +344,6 @@ export class Gridfw<TSession = any, TI18n extends I18N = any>
 	) {
 		let controllerResponse: any;
 		try {
-			const options = this.options;
 			//* Resolve path
 			let path = req.url!,
 				method = req.method!;

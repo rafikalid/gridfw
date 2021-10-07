@@ -21,7 +21,7 @@ export class CookieParams extends Map<string, string> implements CookieMap {
 			if (cookieHeader.length > options.cookieMaxLength)
 				throw new GError(
 					ErrorCodes.COOKIE_MAX_LENGTH,
-					`Enexpected cookie size: ${cookieHeader.length}. May be this is an attack!`
+					`Unexpected cookie size: ${cookieHeader.length}. May be this is an attack!`
 				);
 			var parts = cookieHeader.split(';');
 			for (let i = 0, len = parts.length; i < len; ++i) {
