@@ -100,11 +100,11 @@ export interface BOptions extends RouterOptions {
 	encoding: BufferEncoding;
 	/** Etag generator */
 	etag:
-		| boolean
-		| ((
-				entity: string | Buffer | Etag.StatsLike,
-				options?: Etag.Options | undefined
-		  ) => string);
+	| boolean
+	| ((
+		entity: string | Buffer | Etag.StatsLike,
+		options?: Etag.Options | undefined
+	) => string);
 
 	/** JSONP Callback query param */
 	jsonpParam: string;
@@ -122,7 +122,7 @@ export type ErrorHandler = (
 	err: Error | GError,
 	req: Request<any, any>,
 	resp: Response<any, any>
-) => void;
+) => void | Promise<void>;
 
 /** Parsed options */
 export interface ParsedOptions extends BOptions {
@@ -263,6 +263,7 @@ export const DEFAULT_OPTIONS: Omit<
 		else(err: Error | GError, req, resp) {
 			req.fatalError('CORE', err);
 			resp.statusCode = 500;
+			console.error('ERR>>', err);
 			resp.send('Internal Error!');
 		}
 	},

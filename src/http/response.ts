@@ -339,10 +339,12 @@ export class Response<TSession, TI18n extends I18N> extends ServerResponse {
 					default:
 						throw new GError(
 							ErrorCodes.InternalError,
-							`Enexpected content type: ${contentType}`
+							`Unexpected content type: ${contentType}`
 						);
 				}
-				data = Buffer.from(data, encoding);
+				if (typeof data === 'string')
+					data = Buffer.from(data, encoding);
+				else throw new GError(ErrorCodes.InternalError, `Sending failed. Unreadable data`);
 			}
 			//* Calc Etag
 			if (!this.hasHeader('etag'))

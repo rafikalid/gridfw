@@ -342,7 +342,6 @@ export class Gridfw<TSession = any, TI18n extends I18N = any>
 		req: Request<TSession, TI18n>,
 		resp: Response<TSession, TI18n>
 	) {
-		let controllerResponse: any;
 		try {
 			//* Resolve path
 			let path = req.url!,
@@ -367,6 +366,7 @@ export class Gridfw<TSession = any, TI18n extends I18N = any>
 			req.cookies = new CookieParams(req);
 			//* Exec wrappers
 			const wrappers = routeNode.wrappers;
+			let controllerResponse: any;
 			if (wrappers.length > 0) {
 				let wrapperIndex = 0;
 				function next() {
@@ -387,20 +387,20 @@ export class Gridfw<TSession = any, TI18n extends I18N = any>
 					>
 				).controller(req, resp);
 			}
-		} catch (err: any) {
-			//* Handle error
-			const errors = this.options.errors;
-			if (typeof err?.code === 'number')
-				(errors[err.code] ?? errors.else)(err, req, resp);
-			else errors.else(err, req, resp);
-		} finally {
-			// Clear temp files for uploading
-			if (req._uploading != null) req._uploading.then(r => r.clear());
 			// Send returned data & end request
 			if (resp.writableEnded === false) {
 				if (controllerResponse == null) await resp.end();
 				else await resp.send(controllerResponse);
 			}
+		} catch (err: any) {
+			//* Handle error
+			const errors = this.options.errors;
+			if (typeof err?.code === 'number')
+				await (errors[err.code] ?? errors.else)(err, req, resp);
+			else await errors.else(err, req, resp);
+		} finally {
+			// Clear temp files for uploading
+			if (req._uploading != null) req._uploading.then(r => r.clear());
 		}
 	}
 	/** Link events to websocket */
