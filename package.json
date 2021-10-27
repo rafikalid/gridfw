@@ -84,7 +84,7 @@
 		"etag": "^1.8.1",
 		"fast-decode-uri-component": "^1.0.1",
 		"fresh": "^0.5.2",
-		"gridfw-tree-router": "^1.0.10",
+		"gridfw-tree-router": "^1.0.11",
 		"iconv-lite": "^0.6.3",
 		"lru-ttl-cache": "^2.4.3",
 		"mime-types": "^2.1.33",

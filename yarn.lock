@@ -2033,10 +2033,10 @@ gridfw-compiler@^2.0.1:
     through2 "^4.0.2"
     typescript "^4.4.3"
 
-gridfw-tree-router@^1.0.10:
-  version "1.0.10"
-  resolved "https://registry.yarnpkg.com/gridfw-tree-router/-/gridfw-tree-router-1.0.10.tgz#8088ea4d3dd25c87b01b7fdab89612701e52ee25"
-  integrity sha512-Rv/FssNCCFn94QDlE00C97gxR5BMAt5sZESakV0diRjMzASNpumde6yn9igD+jy5RTO2plPN8zbPrOopA7O9yg==
+gridfw-tree-router@^1.0.11:
+  version "1.0.12"
+  resolved "https://registry.yarnpkg.com/gridfw-tree-router/-/gridfw-tree-router-1.0.12.tgz#fe5d9c607a0917411593d8fcfac607b7ea834c77"
+  integrity sha512-oZc0oj9ijvxyLlNZXDpYEYdw5nXHuoyoiHrAmoVkFDwRhiwkqN5iRXc6ohiAICgsnWMmNt5p+vWsQ3hYb6Uc3g==
   dependencies:
     lru-ttl-cache "^2.4.3"
 
