@@ -4621,10 +4621,10 @@ void-elements@^3.1.0:
   resolved "https://registry.yarnpkg.com/void-elements/-/void-elements-3.1.0.tgz#614f7fbf8d801f0bb5f0661f5b2f5785750e4f09"
   integrity sha1-YU9/v42AHwu18GYfWy9XhXUOTwk=
 
-web-token@^1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/web-token/-/web-token-1.1.3.tgz#db146bc211e649ae021b97d4a4424440ee1060d0"
-  integrity sha512-DttbdHYyEQJn3zdzfWEiGdi8wkX1JNr5NPEmMALGjQ2NTOsDik+CpYwV34soXZW4n5S8RDbTcgywNfJb8dJ61g==
+web-token@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/web-token/-/web-token-1.1.4.tgz#b139f6538d34724513e045e91c70e9e95632e4a0"
+  integrity sha512-xu6v7kMFEZQxIU2mFFOEp1vQ0+PqPpD7tSMwLw5c9EFh4t/SNqgZVSnoWqvQDCw85HXOW49f6oZoZZov8udW5g==
 
 which-boxed-primitive@^1.0.2:
   version "1.0.2"
