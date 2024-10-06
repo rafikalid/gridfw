@@ -79,7 +79,7 @@
 		"chalk": "^4.1.2",
 		"content-disposition": "^0.5.3",
 		"content-type": "^1.0.4",
-		"cookie": "^0.4.1",
+		"cookie": "^0.7.0",
 		"encodeurl": "^1.0.2",
 		"etag": "^1.8.1",
 		"fast-decode-uri-component": "^1.0.1",
